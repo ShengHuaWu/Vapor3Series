@@ -3,5 +3,34 @@ As an iOS developer, I am super excited that Apple made Swift open-sourced in 20
 Not only does it mean there will be more interesting features, but we are able to run Swift on Linux machines as well.
 More importantly, the later one brings us the possibility to make a server with Swift.
 Currently, there are couple of different server side Swift frameworks, such as Vapor, Perfect, and Kitura.
-The reason why I choose Vapor 3 for this article is that it's the only framework which supports [SwiftNIO](https://github.com/apple/swift-nio) at this moment.
-As a result, Vapor 3 provides fully asynchronous APIs and it's a very good chance for me to understand asynchronous programming.
+The reason why I choose Vapor 3 for this article is that it supports [SwiftNIO](https://github.com/apple/swift-nio) quickly.
+As a result, Vapor 3 provides fully asynchronous APIs and it's a very good chance for me to practice asynchronous programming.
+In this article, I am going to demonstrate how to build RESTful endpoints with Vapor 3.
+
+### Preparation
+If you haven't installed Vapor yet, please follow [this instruction](https://docs.vapor.codes/3.0/install/macos/) to install Vapor properly.
+After installation succeeds, we can generate our new project folder with [Vapor's toolbox new](https://docs.vapor.codes/3.0/getting-started/toolbox/#new) command.
+```
+vapor new CRUDControllers
+```
+Since we don't need the model and controller templates created by Vapor toolbox, please delete the `Models` and `Controllers` folders with the following commands.
+```
+cd CRUDControllers
+rm -rf Sources/App/Models/
+rm -rf Sources/App/Controllers/
+```
+Besides, we should remove the useless code before building the project.
+First of all, please open `Sources/App/configure.swift` file, and remove the following line.
+```
+migrations.add(model: Todo.self, database: .sqlite)
+```
+Secondly, go to `Sources/App/router.swift` file, and remove the following lines.
+```
+// Example of configuring a controller		
+let todoController = TodoController()		
+router.get("todos", use: todoController.index)		
+router.post("todos", use: todoController.create)		
+router.delete("todos", Todo.parameter, use: todoController.delete)
+```
+Finally, we can generate the Xcode project file with `vapor xcode -y`. The `CRUDControllers.xcodeproj` will be opened automatically, and the project should build successfully.
+![run_scheme](../Resources/CRUDControllers/run_scheme.png)
