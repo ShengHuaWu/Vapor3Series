@@ -3,9 +3,9 @@ As an iOS developer, I am super excited that Apple made Swift open-sourced in 20
 Not only does it mean there will be more interesting features, but we are able to run Swift on Linux machines as well.
 More importantly, the later one brings us the possibility to write a server with Swift.
 Currently, there are couple of different server side Swift frameworks, such as Vapor, Perfect, and Kitura.
-The reason why I choose Vapor 3 in this article is that it supports [SwiftNIO](https://github.com/apple/swift-nio) quickly.
+The reason why I choose Vapor 3 for this article is that it supports [SwiftNIO](https://github.com/apple/swift-nio) quickly.
 As a result, Vapor 3 provides succinct asynchronous APIs and it's a very good chance to practice asynchronous programming.
-For the purpose of this article, I am going to demonstrate how to build RESTful endpoints with Vapor 3.
+For the purpose of this article, I am going to demonstrate how to build simple RESTful endpoints with Vapor 3.
 
 ### Preparation
 If you haven't installed Vapor yet, please follow [this instruction](https://docs.vapor.codes/3.0/install/macos/) to install Vapor properly.
@@ -75,7 +75,7 @@ Let's switch to `configure.swift`, and add the following line before `services.r
 ```
 migrations.add(model: User.self, database: .sqlite)
 ```
-Migrations should only run once.
+Generally speaking, migrations should only run once.
 If they have run in a database, they will never be executed again.
 However, since we are using an in-memory database right now, the migration will be executed every time the application starts.
 
@@ -90,11 +90,11 @@ Finally, in order to retrieve `User` model more easily with our endpoints, pleas
 extension User: Parameter {}
 ```
 
-At this point, we finish our `User` model. Please try to build and run the application, in order to make sure everything works fine.
+At this point, our `User` model is completed. Please try to build and run the application, in order to make sure everything works fine.
 
 ### Controller
-It's time to create our controller now.
-Again, Let's switch back to Terminal and create our controller file with the following commands.
+Vapor provides controllers for us to handle our endpoints.
+Again, please switch back to Terminal and create our controller file with the following commands.
 ```
 mkdir Sources/App/Controllers
 touch Sources/App/Controllers/UsersController.swift
@@ -117,7 +117,7 @@ final class UsersController {
 ```
 Since our `User` model already conforms `Content` protocol, a `User` instance can be generated from the JSON data of the HTTP body with `req.content.decode(User.self)`.
 In addition, since the model also conforms `SQLiteModel` protocol, the instance can be saved into the SQLite database with `user.save(on: req)`.
-We hook these two operations with `flatMap`, because both of them are asynchronous.
+We hook up these two operations with `flatMap`, because both of them are asynchronous.
 Here is the first time we encounter `Future` type.
 As I mention at the beginning of this article, Vapor 3 provides asynchronous APIs because it supports SwiftNIO.
 If you are not familiar with `Future` type yet, please read [this document](https://docs.vapor.codes/3.0/getting-started/async/) for more details.
@@ -137,7 +137,7 @@ final class UsersController {
     }
 }
 ```
-On one hand, we retrieve all instances of our `User` model with querying the database.
+On one hand, we retrieve all instances of our `User` model by querying the database.
 On the other hand, since our `User` model conforms `Parameter` protocol, `req.parameters.next(User.self)` will fetch the instance with the given identifier.
 
 Next step is implementing the updating functionality for our `UsersController`.
@@ -175,7 +175,7 @@ final class UsersController {
 We retrieve the instance with `req.parameters.next(User.self)` and delete it from the database with `user.delete(on: req)`.
 Since we don't have to return any JSON format, we can just return a no-content HTTP status code with `transform(to: HTTPStatus.noContent)`, which will convert `Future<User>` to `Future<HTTPStatus>`.
 
-Last but not least, we have to hook our `UsersController` with the router.
+Last but not least, we have to connect our `UsersController` with the router.
 There are two necessary things to make everything work.
 First, our `UsersController` should conform `RouteCollection` protocol and implement the `func boot(router: Router) throws` method as the following.
 ```
@@ -192,11 +192,16 @@ final class UsersController: RouteCollection {
     }
 }
 ```
-Inside this method, we tell the router which path, HTTP method and handler should be used for each endpoint.
-Secondly, please switch to `Sources/App/routes.swift` and write the following lines, in order to register our `UsersController` with the router.
+Inside this method, we tell the router which path, HTTP method and handler function should be used for each endpoint.
+Secondly, in order to register our `UsersController` with the router, please switch to `Sources/App/routes.swift` and write the following lines.
 ```
 public func routes(_ router: Router) throws {
     let usersController = UsersController()
     try router.register(collection: usersController)
 }
 ```
+
+At this point, we can run our application and verify the implementation with [Postman](https://www.getpostman.com/).
+
+### Conclusion
+[Here](https://github.com/ShengHuaWu/Vapor3Series/tree/master/CRUDControllers) is the entire project.
