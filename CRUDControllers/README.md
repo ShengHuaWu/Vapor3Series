@@ -1,6 +1,5 @@
 ## Vapor 3 Series I - CRUD with Controllers
-As an iOS developer, I am super excited that Apple made Swift open-sourced in 2015.
-Not only does it mean there will be more interesting features, but we are able to run Swift on Linux machines as well.
+I am super excited that Apple made Swift open-sourced in 2015, because not only does it mean there will be more interesting features, but we are able to run Swift on Linux machines as well.
 More importantly, the later one brings us the possibility to write a server with Swift.
 Currently, there are couple of different server side Swift frameworks, such as Vapor, Perfect, and Kitura.
 The reason why I choose Vapor 3 for this article is that it supports [SwiftNIO](https://github.com/apple/swift-nio) quickly.
@@ -93,7 +92,8 @@ extension User: Parameter {}
 At this point, our `User` model is completed. Please try to build and run the application, in order to make sure everything works fine.
 
 ### Controller
-Vapor provides controllers for us to handle our endpoints.
+Vapor provides controllers for us to handle interactions from a client, such as requests, process them and return the responses.
+For our case here, one `UsersController` will handle CRUD operations on `User` model.
 Again, please switch back to Terminal and create our controller file with the following commands.
 ```
 mkdir Sources/App/Controllers
@@ -138,7 +138,7 @@ final class UsersController {
 }
 ```
 On one hand, we retrieve all instances of our `User` model by querying the database.
-On the other hand, since our `User` model conforms `Parameter` protocol, `req.parameters.next(User.self)` will fetch the instance with the given identifier.
+On the other hand, since our `User` model conforms `Parameter` protocol, `req.parameters.next(User.self)` will fetch the instance with the given identifier from the database.
 
 Next step is implementing the updating functionality for our `UsersController`.
 Let's add the following method below the retrieving methods.
@@ -157,7 +157,7 @@ final class UsersController {
 ```
 The `flatMap` function we use here is different from the previous one.
 It actually waits both of `req.parameters.next(User.self)` and `req.content.decode(User.self)` finish, and then executes the block.
-Within the block, we just update the instance and save it into the database.
+Within the block, we just update the instance with the new values and then save it into the database.
 
 Then, let's add the final piece of our CRUD endpoints, which is the deletion functionality.
 As usual, please append the following method below `updateHandler` method.
@@ -173,9 +173,9 @@ final class UsersController {
 }
 ```
 We retrieve the instance with `req.parameters.next(User.self)` and delete it from the database with `user.delete(on: req)`.
-Since we don't have to return any JSON format, we can just return a no-content HTTP status code with `transform(to: HTTPStatus.noContent)`, which will convert `Future<User>` to `Future<HTTPStatus>`.
+Since there is no content to return, we can just provide a 204 No Content response with `transform(to: HTTPStatus.noContent)`, which will convert `Future<User>` to `Future<HTTPStatus>`.
 
-Last but not least, we have to connect our `UsersController` with the router.
+Last but not least, we have to register our `UsersController` with the router.
 There are two necessary things to make everything work.
 First, our `UsersController` should conform `RouteCollection` protocol and implement the `func boot(router: Router) throws` method as the following.
 ```
@@ -193,7 +193,7 @@ final class UsersController: RouteCollection {
 }
 ```
 Inside this method, we tell the router which path, HTTP method and handler function should be used for each endpoint.
-Secondly, in order to register our `UsersController` with the router, please switch to `Sources/App/routes.swift` and write the following lines.
+Secondly, in order to properly register our `UsersController` with the router, please switch to `Sources/App/routes.swift` and write the following lines.
 ```
 public func routes(_ router: Router) throws {
     let usersController = UsersController()
@@ -206,12 +206,13 @@ At this point, we can run our application and verify the implementation with [Po
 ### Conclusion
 [Here](https://github.com/ShengHuaWu/Vapor3Series/tree/master/CRUDControllers) is the entire project.
 
-It's awesome that Vapor provides a solid structure and concise interface to write a server with Swift, even though it's a very simple server.
-Perhaps, there aren't so many productions which adopt Vapor as the backend framework.
-However, as the community is growing and Vapor is getting robust, there will be more and more developers who are willing to give it a try.
-As an iOS developer, it's always great to understand what happens within the server we are communicating with. It also helps when we cooperate with backend developers, even though they might not use Vapor or Swift.
+Although it's a very simple server, it's quite awesome that Vapor provides a solid structure and concise interface to write a server with Swift.
+Currently, there aren't so many productions which adopt Vapor as the backend framework.
+However, as the community is growing and Vapor is getting robust, there are more and more developers who are willing to give it a try.
+As an iOS developer, it's always great to understand what happens within the server we are communicating with.
+Having some backend knowledge is also helpful when cooperating with backend developers, even though they might not use Vapor or Swift.
 
 I'm going to share more features based on the implementation of this project in the future articles.
-If you are also interested in server side Swift and Vapor, I suggest reading [this book](https://store.raywenderlich.com/products/server-side-swift-with-vapor) which is published by raywenderlich.com.
-Not only it contains tutorials, but it also gives clear explanation of each technique.
+If you are also interested in server side Swift and Vapor, I suggest reading [raywenderlich.com Server Side Swift with Vapor book](https://store.raywenderlich.com/products/server-side-swift-with-vapor).
+Not only it contains many tutorials, but it also gives thorough explanation of each technique.
 Besides, I'm totally open to discussion and feedback, so please share your thoughts.
