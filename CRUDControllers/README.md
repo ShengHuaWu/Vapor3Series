@@ -120,7 +120,7 @@ In addition, since the model also conforms `SQLiteModel` protocol, the instance 
 We hook up these two operations with `flatMap`, because both of them are asynchronous.
 Here is the first time we encounter `Future` type.
 As I mention at the beginning of this article, Vapor 3 provides asynchronous APIs because it supports SwiftNIO.
-If you are not familiar with `Future` type yet, please read [this document](https://docs.vapor.codes/3.0/getting-started/async/) for more details.
+If you would like to know more about `Future` type yet, please read [this document](https://docs.vapor.codes/3.0/getting-started/async/) for more details.
 
 Secondly, our `UsersController` should be able to retrieve our `User` model.
 Please append the following lines below `createHandler` method we just wrote.
@@ -205,3 +205,13 @@ At this point, we can run our application and verify the implementation with [Po
 
 ### Conclusion
 [Here](https://github.com/ShengHuaWu/Vapor3Series/tree/master/CRUDControllers) is the entire project.
+
+It's awesome that Vapor provides a solid structure and concise interface to write a server with Swift, even though it's a very simple server.
+Perhaps, there aren't so many productions which adopt Vapor as the backend framework.
+However, as the community is growing and Vapor is getting robust, there will be more and more developers who are willing to give it a try.
+As an iOS developer, it's always great to understand what happens within the server we are communicating with. It also helps when we cooperate with backend developers, even though they might not use Vapor or Swift.
+
+I'm going to share more features based on the implementation of this project in the future articles.
+If you are also interested in server side Swift and Vapor, I suggest reading [this book](https://store.raywenderlich.com/products/server-side-swift-with-vapor) which is published by raywenderlich.com.
+Not only it contains tutorials, but it also gives clear explanation of each technique.
+Besides, I'm totally open to discussion and feedback, so please share your thoughts.
