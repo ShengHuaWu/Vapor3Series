@@ -11,26 +11,26 @@ final class UsersController: RouteCollection {
         usersRoute.delete(User.parameter, use: deleteHandler)
     }
     
-    func getAllHandler(_ req: Request) throws -> Future<[User]> {
-        return User.query(on: req).decode(User.self).all()
+    func getAllHandler(_ req: Request) throws -> Future<[User.Public]> {
+        return User.query(on: req).decode(data: User.Public.self).all()
     }
     
-    func getOneHandler(_ req: Request) throws -> Future<User> {
-        return try req.parameters.next(User.self)
+    func getOneHandler(_ req: Request) throws -> Future<User.Public> {
+        return try req.parameters.next(User.self).toPublic()
     }
     
-    func createHandler(_ req: Request) throws -> Future<User> {
+    func createHandler(_ req: Request) throws -> Future<User.Public> {
         return try req.content.decode(User.self).flatMap { (user) in
             user.password = try BCrypt.hash(user.password)
-            return user.save(on: req)
+            return user.save(on: req).toPublic()
         }
     }
     
-    func updateHandler(_ req: Request) throws -> Future<User> {
-        return try flatMap(to: User.self, req.parameters.next(User.self), req.content.decode(User.self)) { (user, updatedUser) in
+    func updateHandler(_ req: Request) throws -> Future<User.Public> {
+        return try flatMap(to: User.Public.self, req.parameters.next(User.self), req.content.decode(User.self)) { (user, updatedUser) in
             user.name = updatedUser.name
             user.username = updatedUser.username
-            return user.save(on: req)
+            return user.save(on: req).toPublic()
         }
     }
     
