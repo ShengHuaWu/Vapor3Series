@@ -18,7 +18,7 @@ cd CRUDControllers
 rm -rf Sources/App/Models/
 rm -rf Sources/App/Controllers/
 ```
-Besides, we should remove the useless code before trying to build the project.
+Besides, we should remove the unnecessary code before trying to build the project.
 First of all, open `Sources/App/configure.swift` file, and remove the following line.
 ```
 migrations.add(model: Todo.self, database: .sqlite)
