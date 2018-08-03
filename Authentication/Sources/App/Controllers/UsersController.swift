@@ -1,14 +1,20 @@
 import Vapor
 import Crypto
+import Authentication
 
 final class UsersController: RouteCollection {
     func boot(router: Router) throws {
         let usersRoute = router.grouped("api", "users")
         usersRoute.get(use: getAllHandler)
         usersRoute.get(User.parameter, use: getOneHandler)
-        usersRoute.post(use: createHandler)
         usersRoute.put(User.parameter, use: updateHandler)
         usersRoute.delete(User.parameter, use: deleteHandler)
+        
+        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
+        let guardAuthMiddleware = User.guardAuthMiddleware()
+        
+        let protected = usersRoute.grouped(basicAuthMiddleware, guardAuthMiddleware)
+        protected.post(use: createHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> Future<[User.Public]> {
