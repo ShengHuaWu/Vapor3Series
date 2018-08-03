@@ -66,6 +66,10 @@ extension User: BasicAuthenticatable {
     }
 }
 
+extension User: TokenAuthenticatable {
+    typealias TokenType = Token
+}
+
 struct AdminUser: Migration {
     typealias Database = SQLiteDatabase
     
