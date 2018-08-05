@@ -40,6 +40,7 @@ final class UsersController: RouteCollection {
         return try flatMap(to: User.Public.self, req.parameters.next(User.self), req.content.decode(User.self)) { (user, updatedUser) in
             user.name = updatedUser.name
             user.username = updatedUser.username
+            user.password = try BCrypt.hash(updatedUser.password)
             return user.save(on: req).toPublic()
         }
     }
