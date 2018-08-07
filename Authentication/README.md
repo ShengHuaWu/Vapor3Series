@@ -3,7 +3,7 @@ In [our previous article](https://medium.com/swift2go/vapor-3-series-i-crud-with
 More specifically, we implemented our `User` model to store data into a SQLite database and our `UsersController` to handle interactions from a client.
 Although our server has many great features already, it also has one problem: anyone can create new users and delete them.
 In other words, there is no authentication on the endpoints to ensure that only known users can manipulate the database.
-In this article, I am going to demonstrate how to store passwords and authenticated users, and how to protect our endpoints with HTTP basic and token authentications.
+In this article, I am going to demonstrate how to store passwords and authenticated users, and how to protect our endpoints with HTTP basic and bearer token authentications.
 
 Please notice that this article will base on [the previous implementation](../CRUDControllers).
 
@@ -227,7 +227,7 @@ migrations.add(migration: AdminUser.self, database: .sqlite)
 This line adds our `AdminUser` to the list of migrations so our application executes the migration at the next launch.
 Now, we are able to satisfy HTTP basic authentication with the username and password of our `AdminUser` on Postman.
 
-### Token Authentication
+### Bearer Token Authentication
 At this stage, only authenticated users can create users, but all other endpoints are still unprotected.
 Besides, asking a user to give credentials with each request is impractical, and we don't want to store a user's password anywhere in our application.
 Instead, we should provide an endpoint for users to log in, and we can replace their credentials with a token after they log in.
@@ -286,4 +286,63 @@ After this, inside `boot(router:)` method, please add the following line under `
 ```
 basicProtected.post("login", use: loginHandler)
 ```
-Now, we can run our application and try to create a token for our admin user with Postman.
+Now, we can run our application and create a token for our admin user with Postman.
+
+[Bearer token authentication](https://wiki.apstrata.com/display/doc/Bearer+Token+Authentication) is a mechanism for sending a token to authenticated requests, and it uses `Authorization` header as well.
+Please go back to our `Token` model and append the following code at the bottom of the file.
+```
+extension Token: Authentication.Token {
+    typealias UserType = User
+
+    static var userIDKey: UserIDKey{
+        return \Token.userID
+    }
+
+    static var tokenKey: TokenKey {
+        return \Token.token
+    }
+}
+```
+This extension tells Vapor what type the user is, which property is the token and which one is the user ID.
+Then, switch to our `User` model and add the following extension.
+```
+extension User: TokenAuthenticatable {
+    typealias TokenType = Token
+}
+```
+This extension tells Vapor what type a token is.
+The final step is to modify `boot(router:)` method within our `UsersController`.
+Let's replace the entire `boot(router:)` method with the following code.
+```
+func boot(router: Router) throws {
+    let usersRoute = router.grouped("api", "users")
+
+    let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
+    let guardAuthMiddleware = User.guardAuthMiddleware()
+
+    let basicProtected = usersRoute.grouped(basicAuthMiddleware, guardAuthMiddleware)
+    basicProtected.post("login", use: loginHandler)
+
+    let tokenAuthMiddleware = User.tokenAuthMiddleware()
+    let tokenProtected = usersRoute.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+    tokenProtected.get(use: getAllHandler)
+    tokenProtected.get(User.parameter, use: getOneHandler)
+    tokenProtected.put(User.parameter, use: updateHandler)
+    tokenProtected.post(use: createHandler)
+    tokenProtected.delete(User.parameter, use: deleteHandler)
+}
+```
+We use `basicAuthMiddleware` and `guardAuthMiddleware` to protect the login endpoint, and on the other hand, we use `tokenAuthMiddleware` and `guardAuthMiddleware` to protect our CRUD endpoints.
+Now, all of our endpoints are protected, and our application only accepts requests from authenticated users.
+
+### Conclusion
+[Here](https://github.com/ShengHuaWu/Vapor3Series/tree/master/Authentication) is the entire project.
+
+Let's recap this long journey of authentication.
+First of all, we add a new `password` property of our `User` model, and only store the hashed password into the database.
+Besides, we also prevent our application from returning the hashed passwords.
+Secondly, we install Vapor's authentication package and protect the endpoint of creating a user with HTTP basic authentication.
+Furthermore, we also seed the database with an admin user.
+Finally, we create our `Token` model, implement the login endpoint, and protect the CRUD endpoints with bearer token authentication.
+
+Although it's a simple server, we still can see that Vapor actually provides very good authentication capabilities to add authentication to our endpoints.
