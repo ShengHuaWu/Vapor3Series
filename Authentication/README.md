@@ -148,12 +148,13 @@ try services.register(AuthenticationProvider())
 ```
 This line registers the necessary services with our application to ensure authentication works.
 
-Let's start to use the new dependency in our `User` model and append the following line below `import FluentSQLite`.
+Let's start to use the new dependency in our `User` model.
+First of all, append the following line below `import FluentSQLite`.
 ```
 import Authentication
 ```
 After that, we are able to adopt HTTP basic authentication with the `Authentication` module.
-Please add the following lines at the bottom of our `User` model.
+Secondly, please add the following lines at the bottom of our `User` model.
 ```
 extension User: BasicAuthenticatable {
     static var usernameKey: UsernameKey {
@@ -178,7 +179,7 @@ extension User: Migration {
     }
 }
 ```
-This custom migration will add all the columns to the `User` table using `User`'s properties, and add a unique index to `username` on User.
+This custom migration will add all the columns to the `User` table using `User`'s properties, and add a unique index to `username` on `User`.
 
 Next, switch to our `UsersController` and add the following lines at the bottom of `boot(router:)` method.
 ```
@@ -196,7 +197,7 @@ usersRoute.post(use: createHandler)
 At this point, if we run the application and try to create a new user with Postman, we are going to receive a `401 Unauthorized` error response.
 Since we are using an in-memory database, there is no existing user in the database every time we run the application.
 As a result, the authentication causes it's impossible for us to create a new user.
-However, one way to solve this is to seed the database and create a user when the application boots up, and Vapor's `Migration` protocol give us a good place to do it.
+However, one way to solve this is to seed the database and create a user when the application boots up, and Vapor's `Migration` protocol give us a perfect place to achieve it.
 Let's go back to our `User` model and append the following lines at the bottom of the file.
 ```
 struct AdminUser: Migration {
@@ -223,7 +224,66 @@ Last but not least, inside `configure.swift` please append the following line un
 ```
 migrations.add(migration: AdminUser.self, database: .sqlite)
 ```
-This line adds our `AdminUser` to the list of migrations so the application executes the migration at the next launch.
+This line adds our `AdminUser` to the list of migrations so our application executes the migration at the next launch.
 Now, we are able to satisfy HTTP basic authentication with the username and password of our `AdminUser` on Postman.
 
 ### Token Authentication
+At this stage, only authenticated users can create users, but all other endpoints are still unprotected.
+Besides, asking a user to give credentials with each request is impractical, and we don't want to store a user's password anywhere in our application.
+Instead, we should provide an endpoint for users to log in, and we can replace their credentials with a token after they log in.
+
+Let's start to write our `Token` class.
+Open Terminal to create a new file and regenerate Xcode project as the followings.
+```
+touch Sources/App/Models/Token.swift
+vapor xcode -y
+```
+Next, please write the following code into our new `Token.swift` file.
+```
+import Foundation
+import Vapor
+import FluentSQLite
+import Authentication
+
+final class Token: Codable {
+    var id: Int?
+    var token: String
+    var userID: User.ID
+
+    init(token: String, userID: User.ID) {
+        self.token = token
+        self.userID = userID
+    }
+}
+
+extension Token: SQLiteModel {}
+extension Token: Migration {}
+extension Token: Content {}
+
+extension Token {
+    static func generate(for user: User) throws -> Token {
+        let random = try CryptoRandom().generateData(count: 16)
+        return try Token(token: random.base64EncodedString(), userID: user.requireID())
+    }
+}
+```
+Basically, we define our `Token` model that contains the token string and the token owner's ID, and a helper method to generate a token for a login user.
+Then, Switch to `configure.swift` and add the following line before `services.register(migrations)`.
+```
+migrations.add(model: Token.self, database: .sqlite)
+```
+This line adds our `Token` model to the list of migrations so our application executes the migration at the next launch.
+Open our `UsersController` to write the new login method below `deleteHandler` method.
+```
+func loginHandler(_ req: Request) throws -> Future<Token> {
+    let user = try req.requireAuthenticated(User.self)
+    let token = try Token.generate(for: user)
+    return token.save(on: req)
+}
+```
+Since we are going to protect this method with HTTP basic authentication, we can get the authenticated user from the request, and then create a token for the user.
+After this, inside `boot(router:)` method, please add the following line under `basicProtected.post(use: createHandler)`.
+```
+basicProtected.post("login", use: loginHandler)
+```
+Now, we can run our application and try to create a token for our admin user with Postman.
