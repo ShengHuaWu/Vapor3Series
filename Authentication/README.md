@@ -1,6 +1,6 @@
 ## Vapor 3 Series II - Authentication
-In [our previous article](https://medium.com/swift2go/vapor-3-series-i-crud-with-controllers-d7848f9c193b), we finished a simple RESTful API server with Vapor 3.
-More specifically, we implemented our `User` model to store data into a SQLite database and our `UsersController` to handle interactions from a client.
+In [the previous article](https://medium.com/swift2go/vapor-3-series-i-crud-with-controllers-d7848f9c193b), we finished a simple RESTful API server with Vapor 3.
+More specifically, we created our `User` model to store data into an in-memory SQLite database and implemented our `UsersController` to handle interactions from a client.
 Although our server has many great features already, it also has one problem: anyone can create new users and delete them.
 In other words, there is no authentication on the endpoints to ensure that only known users can manipulate the database.
 In this article, I am going to demonstrate how to store passwords and authenticated users, and how to protect our endpoints with HTTP basic and bearer token authentications.
@@ -8,7 +8,7 @@ In this article, I am going to demonstrate how to store passwords and authentica
 Please notice that this article will base on [the previous implementation](../CRUDControllers).
 
 ### User Password
-Generally speaking, authentication is the process of verifying who someone is, and one common way to authenticate users is using username and password. Open our `User.swift` file and add the following property below `var username: String`.
+Generally speaking, authentication is the process of verifying who someone is, and one common way to authenticate users is using the username and password. Open our `User.swift` file and add the following property below `var username: String`.
 ```
 var password: String
 ```
@@ -29,7 +29,7 @@ Switch to `UsersController.swift` file, and append the following line below `imp
 import Crypto
 ```
 This import statement allows us to use `BCrypt`, and we can use it within `createHandler` and `updateHandler` methods.
-Let's replace these two methods with the following lines.
+Let's replace these two methods with the following implementation.
 ```
 func createHandler(_ req: Request) throws -> Future<User> {
         return try req.content.decode(User.self).flatMap { (user) in
@@ -47,9 +47,9 @@ func updateHandler(_ req: Request) throws -> Future<User> {
     }
 }
 ```
-The new methods will hash the user's password before saving it into the database.
+These two new methods will hash the user's password before saving it into the database.
 
-At this point, if we try to create one user and retrieve afterward with Postman, we can see that the response returns the password hash.
+At this point, if we try to create one user and retrieve afterward with Postman, we can see that the response contains the password hash.
 However, we should protect password hashes and never return them in responses.
 In order to achieve this, go back to `User` model and write the following lines below `User`'s new initializer.
 ```
@@ -66,7 +66,7 @@ final class Public: Codable {
 }
 ```
 This creates an inner class to represent a public view of `User`.
-Next, add the following line below `extension User: Content {}`.
+Next, add the following line under `extension User: Content {}`.
 ```
 extension User.Public: Content {}
 ```
@@ -146,7 +146,7 @@ Additionally, add the following line under `try services.register(FluentSQLitePr
 ```
 try services.register(AuthenticationProvider())
 ```
-This line registers the necessary services with our application to ensure authentication works.
+This line registers the necessary service with our application to make sure authentication works.
 
 Let's start to use the new dependency in our `User` model.
 First of all, append the following line below `import FluentSQLite`.
@@ -166,7 +166,7 @@ extension User: BasicAuthenticatable {
     }
 }
 ```
-This extension tells Vapor which property of our `User` model is the username and which one is the password.
+This extension tells Vapor which property of our `User` model the username is and which one the password is.
 Since HTTP basic authentication uses the username and password to identify users, we should prevent multiple users from having the same username.
 Let's replace `extension User: Migration {}` with the following lines.
 ```
@@ -179,7 +179,7 @@ extension User: Migration {
     }
 }
 ```
-This custom migration will add all the columns to the `User` table using `User`'s properties, and add a unique index to `username` on `User`.
+This custom migration will add all the columns to the `User` table using `User`'s properties, and more importantly add a unique index to `username` on `User`.
 
 Next, switch to our `UsersController` and add the following lines at the bottom of `boot(router:)` method.
 ```
@@ -225,15 +225,15 @@ Last but not least, inside `configure.swift` please append the following line un
 migrations.add(migration: AdminUser.self, database: .sqlite)
 ```
 This line adds our `AdminUser` to the list of migrations so our application executes the migration at the next launch.
-Now, we are able to satisfy HTTP basic authentication with the username and password of our `AdminUser` on Postman.
+Now, we are able to fulfill HTTP basic authentication with the username and password of our `AdminUser` on Postman.
 
-### Bearer Token Authentication
+### Token Authentication
 At this stage, only authenticated users can create users, but all other endpoints are still unprotected.
-Besides, asking a user to give credentials with each request is impractical, and we don't want to store a user's password anywhere in our application.
+Besides, asking a user to give credentials with each request is impractical, and we don't want to store a user's password in our application.
 Instead, we should provide an endpoint for users to log in, and we can replace their credentials with a token after they log in.
 
-Let's start to write our `Token` class.
-Open Terminal to create a new file and regenerate Xcode project as the followings.
+Let's start with our `Token` class.
+As usual, open Terminal to create a new file and regenerate Xcode project as the followings.
 ```
 touch Sources/App/Models/Token.swift
 vapor xcode -y
@@ -303,7 +303,7 @@ extension Token: Authentication.Token {
     }
 }
 ```
-This extension tells Vapor what type the user is, which property is the token and which one is the user ID.
+This extension tells Vapor what type the user is, which property the token is, and which one the user ID is.
 Then, switch to our `User` model and add the following extension.
 ```
 extension User: TokenAuthenticatable {
@@ -344,5 +344,4 @@ Besides, we also prevent our application from returning the hashed passwords.
 Secondly, we install Vapor's authentication package and protect the endpoint of creating a user with HTTP basic authentication.
 Furthermore, we also seed the database with an admin user.
 Finally, we create our `Token` model, implement the login endpoint, and protect the CRUD endpoints with bearer token authentication.
-
 Although it's a simple server, we still can see that Vapor actually provides very good authentication capabilities to add authentication to our endpoints.
