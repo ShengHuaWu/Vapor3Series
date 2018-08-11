@@ -32,7 +32,7 @@ final class UserTests: XCTestCase {
         XCTAssertEqual(receivedUser.username, usersUsername)
         XCTAssertNotNil(receivedUser.id)
         
-        let body: EmptyContent? = nil
+        let body: EmptyBody? = nil
         let getUsersResponse = try app.sendRequest(to: usersURI, method: .GET, body: body, isLoggedInRequest: true)
         let users = try getUsersResponse.content.decode([User.Public].self).wait()
         
@@ -41,4 +41,27 @@ final class UserTests: XCTestCase {
         XCTAssertEqual(users[1].username, usersUsername)
         XCTAssertEqual(users[1].id, receivedUser.id)
     }
-}
+    
+    func testSingleUserCanBeRetrieved() throws {
+        let user = try User.create(name: usersName, username: usersUsername, on: conn)
+        let body: EmptyBody? = nil
+        let response = try app.sendRequest(to: "\(usersURI)/\(user.id!)", method: .GET, body: body, isLoggedInRequest: true)
+        let receivedUser = try response.content.decode(User.Public.self).wait()
+        
+        XCTAssertEqual(receivedUser.name, usersName)
+        XCTAssertEqual(receivedUser.username, usersUsername)
+        XCTAssertEqual(receivedUser.id, user.id)
+    }
+    
+    func testAllUsersCanBeRetrieved() throws {
+        let user = try User.create(name: usersName, username: usersUsername, on: conn)
+        let body: EmptyBody? = nil
+        let response = try app.sendRequest(to: usersURI, method: .GET, body: body, isLoggedInRequest: true)
+        let receivedUsers = try response.content.decode([User.Public].self).wait()
+        
+        XCTAssertEqual(receivedUsers.count, 2)
+        XCTAssertEqual(receivedUsers[1].name, usersName)
+        XCTAssertEqual(receivedUsers[1].username, usersUsername)
+        XCTAssertEqual(receivedUsers[1].id, user.id)
+    }
+ }

@@ -15,13 +15,13 @@ extension Application {
         return app
     }
     
-    func sendRequest<Body>(to path: String, method: HTTPMethod, headers: HTTPHeaders = .init(), body: Body? = nil, isLoggedInRequest: Bool = false) throws -> Response where Body: Content {
+    func sendRequest<Body>(to path: String, method: HTTPMethod, headers: HTTPHeaders = .init(), body: Body?, isLoggedInRequest: Bool = false) throws -> Response where Body: Content {
         var headers = headers
         if isLoggedInRequest {
             let credentials = BasicAuthorization(username: "admin", password: "password")
             var tokenHeaders = HTTPHeaders()
             tokenHeaders.basicAuthorization = credentials
-            let tokenBody: EmptyContent? = nil
+            let tokenBody: EmptyBody? = nil
             let tokenResponse = try sendRequest(to: "api/users/login", method: .POST, headers: tokenHeaders, body: tokenBody)
             let token = try tokenResponse.content.decode(Token.self).wait()
             headers.add(name: .authorization, value: "Bearer \(token.token)")
@@ -38,4 +38,4 @@ extension Application {
     }
 }
 
-struct EmptyContent: Content {}
+struct EmptyBody: Content {}
