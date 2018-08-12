@@ -86,4 +86,12 @@ final class UserTests: XCTestCase {
         
         XCTAssertEqual(receivedUsers.count, 1)
     }
+    
+    static let allTests = [
+        ("testUserCanBeSaved", testUserCanBeSaved),
+        ("testSingleUserCanBeRetrieved", testSingleUserCanBeRetrieved),
+        ("testAllUsersCanBeRetrieved", testAllUsersCanBeRetrieved),
+        ("testUserCanBeUpdated", testUserCanBeUpdated),
+        ("testUserCanBeDeleted", testUserCanBeDeleted)
+    ]
  }
