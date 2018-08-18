@@ -291,3 +291,10 @@ When the tests finish running, we will see the output in Terminal like the follo
 
 ### Conclusion
 [Here](https://github.com/ShengHuaWu/Vapor3Series/tree/master/Testing) is the entire project.
+
+Let's recap this testing journey.
+First of all, we generate new the test target and corresponding files.
+Besides, we write the helper methods of `Application` and our `User` model, in order to make our test cases concise and readable.
+Secondly, we write the test cases for each endpoints with the helper methods, and run the tests with Xcode.
+Finally, we run the test cases on a Linux environment with Docker.
+Testing is a vital part of software development, and it's beneficial to write unit tests and automate them as much as possible.
