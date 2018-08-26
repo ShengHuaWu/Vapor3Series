@@ -19,6 +19,7 @@ final class UsersController: RouteCollection {
         tokenProtected.put(User.parameter, use: updateHandler)
         tokenProtected.post(use: createHandler)
         tokenProtected.delete(User.parameter, use: deleteHandler)
+        tokenProtected.get(User.parameter, "pets", use: getPetsHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> Future<[User.Public]> {
@@ -55,5 +56,11 @@ final class UsersController: RouteCollection {
         let user = try req.requireAuthenticated(User.self)
         let token = try Token.generate(for: user)
         return token.save(on: req)
+    }
+    
+    func getPetsHandler(_ req: Request) throws -> Future<[Pet]> {
+        return try req.parameters.next(User.self).flatMap(to: [Pet].self) { (user) in
+            return try user.pets.query(on: req).all()
+        }
     }
 }

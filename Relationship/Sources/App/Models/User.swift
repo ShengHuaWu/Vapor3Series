@@ -46,6 +46,10 @@ extension User {
     func toPublic() -> User.Public {
         return User.Public(id: id, name: name, username: username)
     }
+    
+    var pets: Children<User, Pet> {
+        return children(\.userID)
+    }
 }
 
 extension Future where T: User {
