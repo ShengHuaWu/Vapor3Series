@@ -7,6 +7,8 @@ final class UserTests: XCTestCase {
     let usersName = "Test"
     let usersUsername = "test1234"
     let usersURI = "/api/users/"
+    let usersPetName = "Test Pet"
+    let usersPetAge = 6
     var app: Application!
     var conn: SQLiteConnection!
     
@@ -85,6 +87,20 @@ final class UserTests: XCTestCase {
         let receivedUsers = try response.content.decode([User.Public].self).wait()
         
         XCTAssertEqual(receivedUsers.count, 1)
+    }
+    
+    func testPetsCanBeRetrieved() throws {
+        let user = try User.create(name: usersName, username: usersUsername, on: conn)
+        let pet = try Pet.create(name: usersPetName, age: usersPetAge, userID: user.requireID(), on: conn)
+        let body: EmptyBody? = nil
+        let response = try app.sendRequest(to: "\(usersURI)/\(user.requireID())/pets", method: .GET, body: body, isLoggedInRequest: true)
+        let receivedPets = try response.content.decode([Pet].self).wait()
+        
+        XCTAssertEqual(receivedPets.count, 1)
+        XCTAssertEqual(receivedPets[0].name, usersPetName)
+        XCTAssertEqual(receivedPets[0].age, usersPetAge)
+        XCTAssertEqual(receivedPets[0].userID, user.id)
+        XCTAssertEqual(receivedPets[0].id, pet.id)
     }
     
     static let allTests = [
