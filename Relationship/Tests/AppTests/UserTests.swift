@@ -108,6 +108,7 @@ final class UserTests: XCTestCase {
         ("testSingleUserCanBeRetrieved", testSingleUserCanBeRetrieved),
         ("testAllUsersCanBeRetrieved", testAllUsersCanBeRetrieved),
         ("testUserCanBeUpdated", testUserCanBeUpdated),
-        ("testUserCanBeDeleted", testUserCanBeDeleted)
+        ("testUserCanBeDeleted", testUserCanBeDeleted),
+        ("testPetsCanBeRetrieved", testPetsCanBeRetrieved) 
     ]
  }

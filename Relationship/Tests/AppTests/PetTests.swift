@@ -110,4 +110,13 @@ final class PetTests: XCTestCase {
         XCTAssertEqual(receivedUser.username, petsUserUsername)
         XCTAssertEqual(receivedUser.id, user.id)
     }
+    
+    static let allTests = [
+        ("testPetCanBeSaved", testPetCanBeSaved),
+        ("testSinglePetCanBeRetrieved", testSinglePetCanBeRetrieved),
+        ("testAllPetsCanBeRetrieved", testAllPetsCanBeRetrieved),
+        ("testPetCanBeUpdated", testPetCanBeUpdated),
+        ("testPetCanBeDeleted", testPetCanBeDeleted),
+        ("testUserCanBeRetrieved", testUserCanBeRetrieved)
+    ]
 }
