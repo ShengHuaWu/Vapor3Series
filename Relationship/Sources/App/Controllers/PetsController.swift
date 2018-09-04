@@ -13,6 +13,9 @@ final class PetsController: RouteCollection {
         tokenProtected.put(Pet.parameter, use: updateHandler)
         tokenProtected.delete(Pet.parameter, use: deleteHandler)
         tokenProtected.get(Pet.parameter, "user", use: getUserHandler)
+        tokenProtected.post(Pet.parameter, "categories", Category.parameter, use: addCategoriesHandler)
+        tokenProtected.get(Pet.parameter, "categories", use: getCategoriesHandler)
+        tokenProtected.delete(Pet.parameter, "categories", Category.parameter, use: removeCategoriesHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> Future<[Pet]> {
@@ -44,6 +47,24 @@ final class PetsController: RouteCollection {
     func getUserHandler(_ req: Request) throws -> Future<User.Public> {
         return try req.parameters.next(Pet.self).flatMap(to: User.Public.self) { (pet) in
             return pet.user.get(on: req).toPublic()
+        }
+    }
+    
+    func addCategoriesHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        return try flatMap(to: HTTPStatus.self, req.parameters.next(Pet.self), req.parameters.next(Category.self)) { (pet, category) in
+            return pet.categories.attach(category, on: req).transform(to: .created)
+        }
+    }
+    
+    func getCategoriesHandler(_ req: Request) throws -> Future<[Category]> {
+        return try req.parameters.next(Pet.self).flatMap(to: [Category].self) { (pet) in
+            return try pet.categories.query(on: req).all()
+        }
+    }
+    
+    func removeCategoriesHandler(_ req: Request) throws -> Future<HTTPStatus> {
+        return try flatMap(to: HTTPStatus.self, req.parameters.next(Pet.self), req.parameters.next(Category.self)) { (pet, category) in
+            return pet.categories.detach(category, on: req).transform(to: .noContent)
         }
     }
 }

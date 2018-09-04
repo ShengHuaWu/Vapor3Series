@@ -38,4 +38,8 @@ extension Pet {
     var user: Parent<Pet, User> {
         return parent(\.userID)
     }
+    
+    var categories: Siblings<Pet, Category, PetCategoryPivot> {
+        return siblings()
+    }
 }

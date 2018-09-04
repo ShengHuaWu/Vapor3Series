@@ -14,3 +14,9 @@ extension Category: SQLiteModel {}
 extension Category: Content {}
 extension Category: Parameter {}
 extension Category: Migration {}
+
+extension Category {
+    var pets: Siblings<Category, Pet, PetCategoryPivot> {
+        return siblings()
+    }
+}

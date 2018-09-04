@@ -12,6 +12,7 @@ final class CategoriesControll: RouteCollection {
         tokenProtected.post(use: createHandler)
         tokenProtected.put(Category.parameter, use: updateHandler)
         tokenProtected.delete(Category.parameter, use: deleteHandler)
+        tokenProtected.get(Category.parameter, "pets", use: getPetsHandler)
     }
     
     func getAllHandler(_ req: Request) throws -> Future<[Category]> {
@@ -36,6 +37,12 @@ final class CategoriesControll: RouteCollection {
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> {
         return try req.parameters.next(Category.self).flatMap { (category) in
             return category.delete(on: req).transform(to: HTTPStatus.noContent)
+        }
+    }
+    
+    func getPetsHandler(_ req: Request) throws -> Future<[Pet]> {
+        return try req.parameters.next(Category.self).flatMap(to: [Pet].self) { (category) in
+            return try category.pets.query(on: req).all()
         }
     }
 }
