@@ -4,11 +4,14 @@ import FluentSQLite
 import XCTest
 
 final class PetTests: XCTestCase {
+    typealias Category = App.Category
+    
     let petsName = "Test Pet"
     let petsAge = 10
     let petsURI = "/api/pets/"
     let petsUserName = "Test"
     let petsUserUsername = "test1234"
+    let petsCategoryName = "test category"
     var app: Application!
     var conn: SQLiteConnection!
     
@@ -111,12 +114,58 @@ final class PetTests: XCTestCase {
         XCTAssertEqual(receivedUser.id, user.id)
     }
     
+    func testPetCategoryPivotCanBeSaved() throws {
+        let user = try User.create(name: petsUserName, username: petsUserUsername, on: conn)
+        let pet = try Pet.create(name: petsName, age: petsAge, userID: user.requireID(), on: conn)
+        let category = try Category.create(name: petsCategoryName, on: conn)
+        let body: EmptyBody? = nil
+        let _ = try app.sendRequest(to: "\(petsURI)/\(pet.requireID())/categories/\(category.requireID())", method: .POST, body: body, isLoggedInRequest: true)
+        
+        let response = try app.sendRequest(to: "\(petsURI)/\(pet.requireID())/categories", method: .GET, body: body, isLoggedInRequest: true)
+        let receivedCategories = try response.content.decode([Category].self).wait()
+        
+        XCTAssertEqual(receivedCategories.count, 1)
+        XCTAssertEqual(receivedCategories[0].name, petsCategoryName)
+        XCTAssertEqual(receivedCategories[0].id, category.id)
+    }
+    
+    func testCategoriesCanBeRetrieved() throws {
+        let user = try User.create(name: petsUserName, username: petsUserUsername, on: conn)
+        let pet = try Pet.create(name: petsName, age: petsAge, userID: user.requireID(), on: conn)
+        let category = try Category.create(name: petsCategoryName, on: conn)
+        let _ = try pet.categories.attach(category, on: conn).wait()
+        let body: EmptyBody? = nil
+        let response = try app.sendRequest(to: "\(petsURI)/\(pet.requireID())/categories", method: .GET, body: body, isLoggedInRequest: true)
+        let receivedCategories = try response.content.decode([Category].self).wait()
+        
+        XCTAssertEqual(receivedCategories.count, 1)
+        XCTAssertEqual(receivedCategories[0].name, petsCategoryName)
+        XCTAssertEqual(receivedCategories[0].id, category.id)
+    }
+    
+    func testPetCategoryPivotCanBeRemoved() throws {
+        let user = try User.create(name: petsUserName, username: petsUserUsername, on: conn)
+        let pet = try Pet.create(name: petsName, age: petsAge, userID: user.requireID(), on: conn)
+        let category = try Category.create(name: petsCategoryName, on: conn)
+        let _ = try pet.categories.attach(category, on: conn).wait()
+        let body: EmptyBody? = nil
+        let _ = try app.sendRequest(to: "\(petsURI)/\(pet.requireID())/categories/\(category.requireID())", method: .DELETE, body: body, isLoggedInRequest: true)
+        
+        let response = try app.sendRequest(to: "\(petsURI)/\(pet.requireID())/categories", method: .GET, body: body, isLoggedInRequest: true)
+        let receivedCategories = try response.content.decode([Category].self).wait()
+        
+        XCTAssertEqual(receivedCategories.count, 0)
+    }
+    
     static let allTests = [
         ("testPetCanBeSaved", testPetCanBeSaved),
         ("testSinglePetCanBeRetrieved", testSinglePetCanBeRetrieved),
         ("testAllPetsCanBeRetrieved", testAllPetsCanBeRetrieved),
         ("testPetCanBeUpdated", testPetCanBeUpdated),
         ("testPetCanBeDeleted", testPetCanBeDeleted),
-        ("testUserCanBeRetrieved", testUserCanBeRetrieved)
+        ("testUserCanBeRetrieved", testUserCanBeRetrieved),
+        ("testPetCategoryPivotCanBeSaved", testPetCategoryPivotCanBeSaved),
+        ("testCategoriesCanBeRetrieved", testCategoriesCanBeRetrieved),
+        ("testPetCategoryPivotCanBeRemoved", testPetCategoryPivotCanBeRemoved)
     ]
 }

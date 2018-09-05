@@ -8,6 +8,10 @@ final class CategoryTests: XCTestCase {
     
     let categoriesName = "Test Category"
     let categoriesURI = "/api/categories/"
+    let categoriesUserName = "Test user"
+    let categoriesUserUsername = "test1234"
+    let categoriesPetName = "test pet"
+    let categoriesPetAge = 7
     var app: Application!
     var conn: SQLiteConnection!
     
@@ -83,11 +87,28 @@ final class CategoryTests: XCTestCase {
         XCTAssertEqual(receivedCategories.count, 0)
     }
     
+    func testPetsCanBeRetrieved() throws {
+        let user = try User.create(name: categoriesUserName, username: categoriesUserUsername, on: conn)
+        let pet = try Pet.create(name: categoriesPetName, age: categoriesPetAge, userID: user.requireID(), on: conn)
+        let category = try Category.create(name: categoriesName, on: conn)
+        let _ = try pet.categories.attach(category, on: conn).wait()
+        
+        let body: EmptyBody? = nil
+        let response = try app.sendRequest(to: "\(categoriesURI)/\(category.requireID())/pets", method: .GET, body: body, isLoggedInRequest: true)
+        let receivedPets = try response.content.decode([Pet].self).wait()
+        
+        XCTAssertEqual(receivedPets.count, 1)
+        XCTAssertEqual(receivedPets[0].name, categoriesPetName)
+        XCTAssertEqual(receivedPets[0].age, categoriesPetAge)
+        XCTAssertEqual(receivedPets[0].id, pet.id)
+    }
+    
     static let allTests = [
         ("testCategoryCanBeSaved", testCategoryCanBeSaved),
         ("testSingleCategoryCanBeRetrieved", testSingleCategoryCanBeRetrieved),
         ("testAllCategoriesCanBeRetrieved", testAllCategoriesCanBeRetrieved),
         ("testCategoryCanBeUpdated", testCategoryCanBeUpdated),
-        ("testCategoryCanBeDeleted", testCategoryCanBeDeleted)
+        ("testCategoryCanBeDeleted", testCategoryCanBeDeleted),
+        ("testPetsCanBeRetrieved", testPetsCanBeRetrieved)
     ]
 }
