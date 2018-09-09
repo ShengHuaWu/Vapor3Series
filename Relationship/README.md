@@ -37,7 +37,7 @@ extension Pet: Parameter {}
 extension Pet: Content {}
 extension Pet: Migration {}
 ```
-These lines are just some boilerplate code to create our Pet model, and it has a `name` property and an `age` property respectively.
+These lines are just some boilerplate code to create our `Pet` model, and it has a `name` property and an `age` property.
 If you are still not familiar with these lines, please refer [our very first article --- CRUD with Controllers](https://medium.com/swift2go/vapor-3-series-i-crud-with-controllers-d7848f9c193b).
 
 Next, open `PetsController.swift` and write the following lines.
@@ -69,8 +69,8 @@ final class PetsController: RouteCollection {
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> { ... }
 }
 ```
-These lines create the endpoints of our Pet model, and these endpoints are protected by Bearer authentication.
-Since we have already discussed the authentication in [the second article of this series](https://medium.com/swift2go/vapor-3-series-ii-authentication-ff17847a9659), I just skip the implementation of each endpoint and leave it as an exercise.
+These lines create the endpoints of our `Pet` model, and these endpoints are protected by Bearer authentication, which we have already discussed in [the second article of this series](https://medium.com/swift2go/vapor-3-series-ii-authentication-ff17847a9659).
+In addition, the implementation of each endpoint is left as an exercise.
 
 Then, open `Category.swift` and add the following lines.
 ```
@@ -91,7 +91,7 @@ extension Category: Content {}
 extension Category: Parameter {}
 extension Category: Migration {}
 ```
-Again, we just create our Category model here, and it has one `name` property.
+Again, we just create our `Category` model here, and it has one `name` property.
 
 Next, open `CategoriesController.swift` and write the following lines.
 ```
@@ -122,7 +122,24 @@ final class CategoriesControll: RouteCollection {
     func deleteHandler(_ req: Request) throws -> Future<HTTPStatus> { ... }
 }
 ```
-Similarly, these lines create the endpoints of our Category model with Bearer authentication, and the implementation of each endpoint is an exercise as well.
+Similarly, these lines create the endpoints of our `Category` model with Bearer authentication, and the implementation of each endpoint is an exercise as well.
+
+After finishing our models and controllers, open `configure.swift` and append the following two lines under `migrations.add(model: Token.self, database: .sqlite)`.
+```
+migrations.add(model: Pet.self, database: .sqlite)
+migrations.add(model: Category.self, database: .sqlite)
+```
+These two line add our `Pet` and `Category` models to the list of migrations, so our application executes the migration at the next launch.
+
+Last but not least, open `router.swift` and append the following lines into `routes(_ router:)` function.
+```
+let petsController = PetsController()
+try router.register(collection: petsController)
+
+let categoriesController = CategoriesControll()
+try router.register(collection: categoriesController)
+```
+At this point, we finish creating our models and controllers, so we are able to try these new endpoints with Postman.
 
 ### Parent-Child Relationship
 
