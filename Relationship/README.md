@@ -144,11 +144,11 @@ At this point, we finish creating our models and controllers, so we are able to 
 ### Parent-Child Relationship
 As we mentioned before, a parent-child relationship is an ownership between two models, and we are going to build this ownership relationship between our `User` and `Pet` models.
 More specifically, one user can have one or more pets, but a pet can only have one owner (user).
-Open `Pet.swift` and add a new property after `var age: Int`.
+First of all, open `Pet.swift` and add a new property after `var age: Int`.
 ```
 var userID: User.ID
 ```
-This line adds a property of type `User.ID`, and this property is not optional, so a pet must have a user.
+This line adds a property of type `User.ID`, and this property is not optional so a pet must have a user.
 Furthermore, please replace the initializer with the following lines to reflect the new property.
 ```
 init(name: String, age: Int, userID: User.ID) {
@@ -169,7 +169,7 @@ func updateHandler(_ req: Request) throws -> Future<Pet> {
 }
 ```
 
-Now, our `User` and `Pet` models are linked with parent-child relationship, but it will be even more useful if we are able to query the relationships.
+Now, our `User` and `Pet` models are linked with parent-child relationship, but it will be even more useful if we are able to query the relationships from each side.
 Open `Pet.swift` and add an extension at the bottom of the file to get pet's user.
 ```
 extension Pet {
@@ -179,7 +179,7 @@ extension Pet {
 }
 ```
 This computed property returns `Fluent`'s generic `Parent` type, and it uses `parent(_:)` function to retrieve the parent which is pet's user.
-Swift to `PetsController.swift` and add a new route handler under `deleteHandler`.
+Then swift to `PetsController.swift` and add a new route handler under `deleteHandler`.
 ```
 func getUserHandler(_ req: Request) throws -> Future<User.Public> {
     return try req.parameters.next(Pet.self).flatMap(to: User.Public.self) { (pet) in
@@ -192,7 +192,7 @@ Moreover, we have to register the new route handler at the end of `boot(router:)
 ```
 tokenProtected.get(Pet.parameter, "user", use: getUserHandler)
 ```
-As a result, it connects an HTTP GET request to `api/pets/:pet_id/user` to the new route handler, and we can test it with Postman.
+As a result, it connects an HTTP GET request to `api/pets/:pet_id/user` to the new route handler, and we can test this new endpoint with Postman.
 On the other hand, open `User.swift` and append a new computed property after `toPublic()` method.
 ```
 var pets: Children<User, Pet> {
@@ -208,15 +208,15 @@ func getPetsHandler(_ req: Request) throws -> Future<[Pet]> {
     }
 }
 ```
-This handler uses the computed property to get user's pets and returns `Future<[Pet]>`.
-Finally, we need to register the new route handler at the end of `boot(router:)` method.
+This handler uses the new computed property to get user's pets and returns `Future<[Pet]>`.
+Similarly, we need to register the new route handler at the end of `boot(router:)` method.
 ```
 tokenProtected.get(User.parameter, "pets", use: getPetsHandler)
 ```
-Therefore, it connects a HTTP GET request to `api/users/:user_id/pets` to the new route handler, and we can test it with Postman as well.
+Therefore, it connects a HTTP GET request to `api/users/:user_id/pets` to the new route handler, and we can test this endpoint with Postman as well.
 
-Although we just finish establish the parent-child relationship between our `User` and `Pet` models with `Fluent`, there is still no link between `User` table and `Pet` table in the database.
-We can take the advantage of foreign key constraints to ensure that a pet cannot be created with a non-existing user and a user cannot be deleted until all his/her pets have been deleted.
+Although we just finish establishing the parent-child relationship between our `User` and `Pet` models with `Fluent`, there is still no link between `User` table and `Pet` table in the database.
+We should set up foreign key constraints to ensure that a pet cannot be created with a non-existing user and a user cannot be deleted until all his/her pets have been deleted.
 Since foreign key constraints can be set up within the migration, open `Pet.swift` and replace `extension Pet: Migration {}` with the following lines.
 ```
 extension Pet: Migration {
@@ -239,5 +239,69 @@ migrations.add(model: Pet.self, database: .sqlite)
 This will make sure that `Fluent` creates the tables in the correct order.
 
 ### Sibling Relationship
+Unlike a parent-child relationship, a sibling relationship doesn't have constraints between two models, for example, if there is a sibling relationship between our `Pet` and `Category` models, a pet can belong one or more categories and a category can contain one or more pets.
+However, we cannot just add a reference to our `Category` directly in our `Pet` model, because it's too inefficient to query.
+Instead, we need a separate model to hold on to the sibling relationship and it's called a pivot.
+Let's create our new pivot model in Terminal and regenerate our Xcode project file.
+```
+touch Sources/App/Models/PetCategoryPivot.swift
+vapor xcode -y
+```
+Then, open `PetCategoryPivot.swift` and add the following code.
+```
+import FluentSQLite
+
+final class PetCategoryPivot: SQLitePivot, ModifiablePivot {
+    var id: Int?
+    var petID: Pet.ID
+    var categoryID: Category.ID
+
+    typealias Left = Pet
+    typealias Right = Category
+
+    static var leftIDKey: LeftIDKey {
+        return \.petID
+    }
+
+    static var rightIDKey: RightIDKey {
+        return \.categoryID
+    }
+
+    init(_ pet: Pet, _ category: Category) throws {
+        self.petID = try pet.requireID()
+        self.categoryID = try category.requireID()
+    }
+}
+
+extension PetCategoryPivot: Migration {}
+```
+Here, we take the advantage of `ModifiablePivot` protocol to obtain some syntactic sugar for adding and removing the relationships.
+Besides, we add two properties to link the identifiers of our `Pet` and `Category` models respectively, and  also define `Left` and `Right` types to tell `Fluent` what the two models in the relationship are.
+After creating our new pivot model, open `configure.swift` and append our new pivot model to the migration list after `migrations.add(model: Category.self, database: .sqlite)`.
+```
+migrations.add(model: PetCategoryPivot.self, database: .sqlite)
+```  
+
+In order to actually create a relationship between our `Pet` and `Category` models, we have to use the new pivot.
+Let's switch to `Pet.swift` and append a new computed property under `var user: Parent<Pet, User>`.
+```
+var categories: Siblings<Pet, Category, PetCategoryPivot> {
+    return siblings()
+}
+```
+This property returns the sibling of a `Pet` that are of type `Category`, and it uses `Fluent`'s `siblings()` function to retrieve all the categories.
+Then, open `PetsController.swift` and append the following new route handler after `getUserHandler` method.
+```
+func addCategoriesHandler(_ req: Request) throws -> Future<HTTPStatus> {
+    return try flatMap(to: HTTPStatus.self, req.parameters.next(Pet.self), req.parameters.next(Category.self)) { (pet, category) in
+        return pet.categories.attach(category, on: req).transform(to: .created)
+    }
+}
+```
+These three route handlers use `attach(_:on:)` to create the sibling relationship between our `Pet` and `Category` models, and then we have to register this route handler at the end of `boot(router:)` method.
+```
+tokenProtected.post(Pet.parameter, "categories", Category.parameter, use: addCategoriesHandler)
+```
+It connects a HTTP POST request to `api/pets/:pet_id/categories` to the new route handler, and we can test this endpoint with Postman.
 
 ### Conclusion
