@@ -192,7 +192,7 @@ Moreover, we have to register the new route handler at the end of `boot(router:)
 ```
 tokenProtected.get(Pet.parameter, "user", use: getUserHandler)
 ```
-As a result, it connects an HTTP GET request to `api/pets/:pet_id/user` to the new route handler, and we can test this new endpoint with Postman.
+As a result, it connects an HTTP GET request to `api/pets/:pet_id/user` to the new route handler.
 On the other hand, open `User.swift` and append a new computed property after `toPublic()` method.
 ```
 var pets: Children<User, Pet> {
@@ -213,7 +213,7 @@ Similarly, we need to register the new route handler at the end of `boot(router:
 ```
 tokenProtected.get(User.parameter, "pets", use: getPetsHandler)
 ```
-Therefore, it connects a HTTP GET request to `api/users/:user_id/pets` to the new route handler, and we can test this endpoint with Postman as well.
+Therefore, it connects a HTTP GET request to `api/users/:user_id/pets` to the new route handler, and we can test these two new endpoints with Postman.
 
 Although we just finish establishing the parent-child relationship between our `User` and `Pet` models with `Fluent`, there is still no link between `User` table and `Pet` table in the database.
 We should set up foreign key constraints to ensure that a pet cannot be created with a non-existing user and a user cannot be deleted until all his/her pets have been deleted.
@@ -242,7 +242,7 @@ This will make sure that `Fluent` creates the tables in the correct order.
 Unlike a parent-child relationship, a sibling relationship doesn't have constraints between two models, for example, if there is a sibling relationship between our `Pet` and `Category` models, a pet can belong one or more categories and a category can contain one or more pets.
 However, we cannot just add a reference to our `Category` directly in our `Pet` model, because it's too inefficient to query.
 Instead, we need a separate model to hold on to the sibling relationship and it's called a pivot.
-Let's create our new pivot model in Terminal and regenerate our Xcode project file.
+Let's create our new pivot model with Terminal and regenerate our Xcode project file.
 ```
 touch Sources/App/Models/PetCategoryPivot.swift
 vapor xcode -y
@@ -276,7 +276,7 @@ final class PetCategoryPivot: SQLitePivot, ModifiablePivot {
 extension PetCategoryPivot: Migration {}
 ```
 Here, we take the advantage of `ModifiablePivot` protocol to obtain some syntactic sugar for adding and removing the relationships.
-Besides, we add two properties to link the identifiers of our `Pet` and `Category` models respectively, and  also define `Left` and `Right` types to tell `Fluent` what the two models in the relationship are.
+Besides, we add two properties to link the identifiers of our `Pet` and `Category` models respectively, and  also define `Left` and `Right` types to tell `Fluent` what the two types in the relationship are.
 After creating our new pivot model, open `configure.swift` and append our new pivot model to the migration list after `migrations.add(model: Category.self, database: .sqlite)`.
 ```
 migrations.add(model: PetCategoryPivot.self, database: .sqlite)
@@ -298,10 +298,83 @@ func addCategoriesHandler(_ req: Request) throws -> Future<HTTPStatus> {
     }
 }
 ```
-These three route handlers use `attach(_:on:)` to create the sibling relationship between our `Pet` and `Category` models, and then we have to register this route handler at the end of `boot(router:)` method.
+This route handler uses `attach(_:on:)` function to create the sibling relationship between our `Pet` and `Category` models, and then we have to register this route handler at the end of `boot(router:)` method.
 ```
 tokenProtected.post(Pet.parameter, "categories", Category.parameter, use: addCategoriesHandler)
 ```
-It connects a HTTP POST request to `api/pets/:pet_id/categories` to the new route handler, and we can test this endpoint with Postman.
+It connects a HTTP POST request to `api/pets/:pet_id/categories/:category_id` to the new route handler.
+
+At this point, our `Pet` and `Category` models are linked with a sibling relationship, but it will be more useful if we can view these relationships.
+Within `PetsController.swift`, add another new route handler under `addCategoriesHandler`.
+```
+func getCategoriesHandler(_ req: Request) throws -> Future<[Category]> {
+    return try req.parameters.next(Pet.self).flatMap(to: [Category].self) { (pet) in
+        return try pet.categories.query(on: req).all()
+    }
+}
+```
+This route handler uses `query(on:)` function to get the categories, and then we need to register this route handler at the bottom of `boot(router:)` method as well.
+```
+tokenProtected.get(Pet.parameter, "categories", use: getCategoriesHandler)
+```
+It connects a HTTP GET request to `api/pets/:pet_id/categories` to the new route handler.
+On the other hand, open `Category.swift` and add an extension at the end of the file.
+```
+extension Category {
+    var pets: Siblings<Category, Pet, PetCategoryPivot> {
+        return siblings()
+    }
+}
+```
+This extension contains one computed property, and this property returns the sibling of a `Category` that are of type `Pet`.
+Furthermore, it also uses `Fluent`'s `siblings()` function to retrieve all the pets.
+After creating the extension, switch to `CategoriesController.swift` and append a new route handler at the end of the file.
+```
+func getPetsHandler(_ req: Request) throws -> Future<[Pet]> {
+    return try req.parameters.next(Category.self).flatMap(to: [Pet].self) { (category) in
+        return try category.pets.query(on: req).all()
+    }
+}
+```
+This route handler uses `query(on:)` function to get the pets, and then we have to register this route handler at the bottom of `boot(router:)` method as well.
+```
+tokenProtected.get(Category.parameter, "pets", use: getPetsHandler)
+```
+It connects a HTTP GET request to `api/categories/:category_id/pets` to the new route handler.
+
+Last but not least, we should take care of is removing the sibling relationship, and fortunately removing a sibling relationship is very similar to adding the relationship.
+Switch back to `PetsController.swift` and add one more route handler after `getCategoriesHandler`.
+```
+func removeCategoriesHandler(_ req: Request) throws -> Future<HTTPStatus> {
+    return try flatMap(to: HTTPStatus.self, req.parameters.next(Pet.self), req.parameters.next(Category.self)) { (pet, category) in
+        return pet.categories.detach(category, on: req).transform(to: .noContent)
+    }
+}
+```
+This route handler uses `detach(_:on:)` to remove the relationship, and returns a `204 No Content` HTTP status.
+Last step is registering the route handler at the end of `boot(router:)` method.
+```
+tokenProtected.delete(Pet.parameter, "categories", Category.parameter, use: removeCategoriesHandler)
+```
+It connects a HTTP DELETE request to `api/pets/:pet_id/categories/:category_id` to the new route handler, and we can test these four new endpoints with Postman.
+
+As creating parent-child relationships previously, it's also a good practice to use foreign key constraints with sibling relationships.
+Currently, `PetCategoryPivot` does not check the identifiers for the pets and categories, so we are able to delete pets and categories that are still linked by the pivot without an error.
+Open `PetCategoryPivot.swift` and replace `extension PetCategoryPivot: Migration {}` with the following lines.
+```
+extension PetCategoryPivot: Migration {
+    static func prepare(on conn: SQLiteConnection) -> Future<Void> {
+        return Database.create(self, on: conn) { (builder) in
+            try addProperties(to: builder)
+            builder.reference(from: \.petID, to: \Pet.id, onDelete: .cascade)
+            builder.reference(from: \.categoryID, to: \Category.id, onDelete: .cascade)
+        }
+    }
+}
+```
+Here, we add all fields to the database with `addProperties(to:)` function.
+We add a reference between `petID` property on `PetCategoryPivot` and `id` property on `Pet`, and `.cascade` means the relationship will be automatically removed when we delete the pet from the database.
+Besides, we do the same thing to `categoryID` property on `PetCategoryPivot` and `id` property on `Category`.
 
 ### Conclusion
+[Here](https://github.com/ShengHuaWu/Vapor3Series/tree/master/Relationship) is the entire project.
