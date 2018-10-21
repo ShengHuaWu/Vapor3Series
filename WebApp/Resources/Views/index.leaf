@@ -2,9 +2,27 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <title>Hello World</title>
+    <title>#(title) | Vapor 3 Series</title>
 </head>
 <body>
-    <h1>Hello World!</h1>
+    <h1>Users</h1>
+    #if(users) {
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                #for(user in users) {
+                    <tr>
+                        <td><a href="/vapor/users/#(user.id)">#(user.name)</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    } else {
+        <h2>There is no user yet</h2>
+    }
 </body>
 </html>

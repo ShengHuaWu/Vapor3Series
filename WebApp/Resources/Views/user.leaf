@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>#(title) | Users</title>
+</head>
+<body>
+    <h1>#(user.name)</h1>
+    <h2>#(user.username)</h2>
+</body>
+</html>
