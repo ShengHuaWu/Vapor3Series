@@ -24,9 +24,12 @@ final class WebsiteController: RouteCollection {
     }
     
     func userHandler(_ req: Request) throws -> Future<View> {
-        return try req.parameters.next(User.self).toPublic().flatMap(to: View.self) { publicUser in
-            let content = UserContext(title: publicUser.name, user: publicUser)
-            return try req.view().render("user", content)
+        return try req.parameters.next(User.self).flatMap(to: View.self) { user in
+            return try user.pets.query(on: req).all().flatMap(to: View.self) { pets in
+                let publicUser = user.toPublic()
+                let content = UserContext(title: publicUser.name, user: publicUser, pets: pets)
+                return try req.view().render("user", content)
+            }
         }
     }
 }
@@ -43,4 +46,5 @@ struct AllUsersContent: Encodable {
 struct UserContext: Encodable {
     let title: String
     let user: User.Public
+    let pets: [Pet]
 }

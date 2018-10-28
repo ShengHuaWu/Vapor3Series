@@ -1,6 +1,6 @@
 #set("content") {
-    <table class="table table-bordered table-hove">
-        <thead class="thread-light">
+    <table class="table table-bordered table-hover">
+        <thead class="thead-light">
             <tr>
                 <th>Name</th>
                 <th>Username</th>
@@ -13,6 +13,27 @@
             </tr>
         </tbody>
     </table>
+
+    #if(count(pets) > 0) {
+        <table class="table table-bordered table-hover">
+            <thead class="thead-light">
+                <tr>
+                    <th>Name</th>
+                    <th>Age</th>
+                </tr>
+            </thead>
+            <tbody>
+                #for(pet in pets) {
+                <tr>
+                    <th>#(pet.name)</th>
+                    <th>#(pet.age)</th>
+                </tr>
+                }
+            </tbody>
+        </table>
+    } else {
+        <h2>There is not any pet yet.</h2>
+    }
 }
 
 #embed("base")
