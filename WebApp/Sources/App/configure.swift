@@ -18,6 +18,7 @@ public func configure(_ config: inout Config, _ env: inout Environment, _ servic
     /// Register middleware
     var middlewares = MiddlewareConfig() // Create _empty_ middleware config
     middlewares.use(ErrorMiddleware.self) // Catches errors and converts to HTTP response
+    middlewares.use(FileMiddleware.self)
     services.register(middlewares)
 
     // Configure a SQLite database

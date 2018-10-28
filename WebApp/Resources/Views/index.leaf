@@ -1,28 +1,25 @@
-<!DOCUMENT html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <title>#(title) | Vapor 3 Series</title>
-</head>
-<body>
+#set("content") {
+    <img src="/vapor-icon.png" class="mx-auto d-block" alt="Vapor Icon">
     <h1>Users</h1>
+
     #if(users) {
-        <table>
-            <thead>
+        <table class="table table-bordered table-hove">
+            <thead class="thread-light">
                 <tr>
                     <th>Name</th>
                 </tr>
             </thead>
             <tbody>
                 #for(user in users) {
-                    <tr>
-                        <td><a href="/vapor/users/#(user.id)">#(user.name)</a></td>
-                    </tr>
+                <tr>
+                    <td><a href="/vapor/users/#(user.id)">#(user.name)</a></td>
+                </tr>
                 }
             </tbody>
         </table>
     } else {
         <h2>There is no user yet</h2>
     }
-</body>
-</html>
+}
+
+#embed("base")
