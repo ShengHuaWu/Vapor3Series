@@ -1,0 +1,24 @@
+#set("content") {
+    <h1>All Users</h1>
+
+    #if(users) {
+        <table class="table table-bordered table-hove">
+            <thead class="thread-light">
+                <tr>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                #for(user in users) {
+                <tr>
+                    <td><a href="/vapor/users/#(user.id)">#(user.name)</a></td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    } else {
+        <h2>There is no user yet</h2>
+    }
+}
+
+#embed("base")

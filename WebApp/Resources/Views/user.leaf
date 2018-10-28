@@ -1,6 +1,18 @@
 #set("content") {
-    <h1>#(user.name)</h1>
-    <h2>#(user.username)</h2>
+    <table class="table table-bordered table-hove">
+        <thead class="thread-light">
+            <tr>
+                <th>Name</th>
+                <th>Username</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <th>#(user.name)</th>
+                <th>#(user.username)</th>
+            </tr>
+        </tbody>
+    </table>
 }
 
 #embed("base")

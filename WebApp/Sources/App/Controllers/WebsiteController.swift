@@ -3,17 +3,23 @@ import Leaf
 
 final class WebsiteController: RouteCollection {
     func boot(router: Router) throws {
-        let usersRoute = router.grouped("vapor")
+        let websiteRoute = router.grouped("vapor")
         
-        usersRoute.get(use: indexHandler)
-        usersRoute.get("users", User.parameter, use: userHandler)
+        websiteRoute.get(use: indexHandler)
+        websiteRoute.get("users", use: allUsersHandler)
+        websiteRoute.get("users", User.parameter, use: userHandler)
     }
     
     func indexHandler(_ req: Request) throws -> Future<View> {
+        let content = IndexContent(title: "Models")
+        return try req.view().render("index", content)
+    }
+    
+    func allUsersHandler(_ req: Request) throws -> Future<View> {
         return User.query(on: req).decode(data: User.Public.self).all().flatMap(to: View.self) { users in
             let publicUsers = users.isEmpty ? nil : users
-            let content = IndexContent(title: "Homepage", users: publicUsers)
-            return try req.view().render("index", content)
+            let content = AllUsersContent(title: "All Users", users: publicUsers)
+            return try req.view().render("allUsers", content)
         }
     }
     
@@ -26,6 +32,10 @@ final class WebsiteController: RouteCollection {
 }
 
 struct IndexContent: Encodable {
+    let title: String
+}
+
+struct AllUsersContent: Encodable {
     let title: String
     let users: [User.Public]?
 }
