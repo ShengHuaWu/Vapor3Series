@@ -12,6 +12,9 @@
             <tr>
                 <td><a href="/vapor/users">All Users</a></td>
             </tr>
+            <tr>
+                <td><a href="/vapor/pets">All Pets</a></td>
+            </tr>
         </tbody>
     </table>
 }
