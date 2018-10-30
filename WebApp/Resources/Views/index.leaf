@@ -15,6 +15,9 @@
             <tr>
                 <td><a href="/vapor/pets">All Pets</a></td>
             </tr>
+            <tr>
+                <td><a href="/vapor/categories">All Categories</a></td>
+            </tr>
         </tbody>
     </table>
 }

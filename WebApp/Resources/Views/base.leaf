@@ -21,6 +21,9 @@
                     <li class="nav-item #if(title == "Homepage"){active}">
                         <a href="/vapor/pets" class="nav-link">All Pets</a>
                     </li>
+                    <li class="nav-item #if(title == "Homepage"){active}">
+                        <a href="/vapor/categories" class="nav-link">All Categories</a>
+                    </li>
                 </ul>
             </div>
         </nav>
