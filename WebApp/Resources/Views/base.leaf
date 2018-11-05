@@ -15,14 +15,17 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav mr-auto">
-                    <li class="nav-item #if(title == "Homepage"){active}">
+                    <li class="nav-item #if(title == "All Users"){active}">
                         <a href="/vapor/users" class="nav-link">All Users</a>
                     </li>
-                    <li class="nav-item #if(title == "Homepage"){active}">
+                    <li class="nav-item #if(title == "All Pets"){active}">
                         <a href="/vapor/pets" class="nav-link">All Pets</a>
                     </li>
-                    <li class="nav-item #if(title == "Homepage"){active}">
+                    <li class="nav-item #if(title == "All Categories"){active}">
                         <a href="/vapor/categories" class="nav-link">All Categories</a>
+                    </li>
+                    <li class="nav-item #if(title == "Create a User"){active}">
+                        <a href="/vapor/users/create" class="nav-link">Create a User</a>
                     </li>
                 </ul>
             </div>

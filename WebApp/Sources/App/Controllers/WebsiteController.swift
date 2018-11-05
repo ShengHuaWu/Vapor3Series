@@ -8,6 +8,8 @@ final class WebsiteController: RouteCollection {
         websiteRoute.get(use: indexHandler)
         websiteRoute.get("users", use: allUsersHandler)
         websiteRoute.get("users", User.parameter, use: userHandler)
+        websiteRoute.get("users", "create", use: createUserHandler)
+        websiteRoute.post(User.self, at: "users", "create", use: createUserPOSTHandler)
         websiteRoute.get("pets", use: allPetsHandler)
         websiteRoute.get("pets", Pet.parameter, use: petHandler)
         websiteRoute.get("categories", use: allCategoriesHandler)
@@ -35,6 +37,21 @@ final class WebsiteController: RouteCollection {
                 return try req.view().render("user", content)
             }
         }
+    }
+    
+    func createUserPOSTHandler(_ req: Request, user: User) throws -> Future<Response> {
+        return user.save(on: req).map(to: Response.self) { user in
+            guard let id = user.id else {
+                throw Abort(.internalServerError)
+            }
+            
+            return req.redirect(to: "/vapor/users/\(id)")
+        }
+    }
+    
+    func createUserHandler(_ req: Request) throws -> Future<View> {
+        let content = CreateUserContent()
+        return try req.view().render("createUser", content)
     }
     
     func allPetsHandler(_ req: Request) throws -> Future<View> {
@@ -105,4 +122,8 @@ struct CategoryContent: Encodable {
     let title: String
     let category: Category
     let pets: [Pet]
+}
+
+struct CreateUserContent: Encodable {
+    let title = "Create a User"
 }
