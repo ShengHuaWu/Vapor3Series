@@ -34,6 +34,11 @@
     } else {
         <h2>There is not any pet yet.</h2>
     }
+
+    <form method="post" action="/vapor/users/#(user.id)/delete">
+        <a class="btn btn-primary" href="/vapor/users/#(user.id)/edit" role="button">Edit</a>
+        <input class="btn btn-danger" type="submit" value="Delete"/>
+    </form>
 }
 
 #embed("base")

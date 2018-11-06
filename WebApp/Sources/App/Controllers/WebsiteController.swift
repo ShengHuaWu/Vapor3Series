@@ -1,5 +1,6 @@
 import Vapor
 import Leaf
+import Crypto
 
 final class WebsiteController: RouteCollection {
     func boot(router: Router) throws {
@@ -10,6 +11,9 @@ final class WebsiteController: RouteCollection {
         websiteRoute.get("users", User.parameter, use: userHandler)
         websiteRoute.get("users", "create", use: createUserHandler)
         websiteRoute.post(User.self, at: "users", "create", use: createUserPOSTHandler)
+        websiteRoute.get("users", User.parameter, "edit", use: editUserHandler)
+        websiteRoute.post("users", User.parameter, "edit", use: editUserPOSTHandler)
+        websiteRoute.post("users", User.parameter, "delete", use: deleteUserPOSTHandler)
         websiteRoute.get("pets", use: allPetsHandler)
         websiteRoute.get("pets", Pet.parameter, use: petHandler)
         websiteRoute.get("categories", use: allCategoriesHandler)
@@ -39,7 +43,14 @@ final class WebsiteController: RouteCollection {
         }
     }
     
+    func createUserHandler(_ req: Request) throws -> Future<View> {
+        let content = CreateUserContent()
+        return try req.view().render("createUser", content)
+    }
+    
     func createUserPOSTHandler(_ req: Request, user: User) throws -> Future<Response> {
+        user.password = try BCrypt.hash(user.password)
+        
         return user.save(on: req).map(to: Response.self) { user in
             guard let id = user.id else {
                 throw Abort(.internalServerError)
@@ -49,9 +60,31 @@ final class WebsiteController: RouteCollection {
         }
     }
     
-    func createUserHandler(_ req: Request) throws -> Future<View> {
-        let content = CreateUserContent()
-        return try req.view().render("createUser", content)
+    func editUserHandler(_ req: Request) throws -> Future<View> {
+        return try req.parameters.next(User.self).flatMap(to: View.self) { user in
+            let content = EditUserContent(user: user)
+            return try req.view().render("createUser", content)
+        }
+    }
+    
+    func editUserPOSTHandler(_ req: Request) throws -> Future<Response> {
+        return try flatMap(to: Response.self, req.parameters.next(User.self), req.content.decode(User.self)) { user, newUser in
+            user.name = newUser.name
+            user.username = newUser.username
+            user.password = try BCrypt.hash(newUser.password)
+            
+            return user.save(on: req).map(to: Response.self) { savedUser in
+                guard let id = savedUser.id else {
+                    throw Abort(.internalServerError)
+                }
+                
+                return req.redirect(to: "/vapor/users/\(id)")
+            }
+        }
+    }
+    
+    func deleteUserPOSTHandler(_ req: Request) throws -> Future<Response> {
+        return try req.parameters.next(User.self).delete(on: req).transform(to: req.redirect(to: "/vapor/users"))
     }
     
     func allPetsHandler(_ req: Request) throws -> Future<View> {
@@ -102,6 +135,16 @@ struct UserContent: Encodable {
     let pets: [Pet]
 }
 
+struct CreateUserContent: Encodable {
+    let title = "Create a User"
+}
+
+struct EditUserContent: Encodable {
+    let title = "Edit User"
+    let user: User
+    let editing = true
+}
+
 struct AllPetsContent: Encodable {
     let title: String
     let pets: [Pet]
@@ -122,8 +165,4 @@ struct CategoryContent: Encodable {
     let title: String
     let category: Category
     let pets: [Pet]
-}
-
-struct CreateUserContent: Encodable {
-    let title = "Create a User"
 }
