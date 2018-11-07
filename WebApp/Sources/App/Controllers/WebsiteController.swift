@@ -62,16 +62,16 @@ final class WebsiteController: RouteCollection {
     
     func editUserHandler(_ req: Request) throws -> Future<View> {
         return try req.parameters.next(User.self).flatMap(to: View.self) { user in
-            let content = EditUserContent(user: user)
+            let publicUser = user.toPublic()
+            let content = EditUserContent(user: publicUser)
             return try req.view().render("createUser", content)
         }
     }
     
     func editUserPOSTHandler(_ req: Request) throws -> Future<Response> {
-        return try flatMap(to: Response.self, req.parameters.next(User.self), req.content.decode(User.self)) { user, newUser in
+        return try flatMap(to: Response.self, req.parameters.next(User.self), req.content.decode(User.Public.self)) { user, newUser in
             user.name = newUser.name
             user.username = newUser.username
-            user.password = try BCrypt.hash(newUser.password)
             
             return user.save(on: req).map(to: Response.self) { savedUser in
                 guard let id = savedUser.id else {
@@ -137,11 +137,12 @@ struct UserContent: Encodable {
 
 struct CreateUserContent: Encodable {
     let title = "Create a User"
+    let creating = true
 }
 
 struct EditUserContent: Encodable {
     let title = "Edit User"
-    let user: User
+    let user: User.Public
     let editing = true
 }
 

@@ -10,10 +10,12 @@
             <label for="username">Username</label>
             <input type="text" name="username" class="form-control" id="username" #if(editing){value="#(user.username)"}/>
         </div>
-        <div class="form-group">
-            <label for="password">Password</label>
-            <input type="text" name="password" class="form-control" id="password" #if(editing){value="#(user.password)"}/>
-        </div>
+        #if(creating){
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="text" name="password" class="form-control" id="password"/>
+            </div>
+        }
         
         <button type="submit" class="btn btn-primary">
             #if(editing){Update} else{Submit}
