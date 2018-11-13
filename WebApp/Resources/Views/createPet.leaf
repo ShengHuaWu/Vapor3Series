@@ -1,0 +1,29 @@
+#set("content") {
+    <h1>#(title)</h1>
+
+    <form method="post">
+        <div class="form-group">
+            <label for="name">Name</label>
+            <input type="text" name="name" class="form-control" id="name" #if(editing){value="#(pet.name)"}/>
+        </div>
+        <div class="form-group">
+            <label for="age">Age</label>
+            <input type="text" name="age" class="form-control" id="age" #if(editing){value="#(pet.age)"}/>
+        </div>
+        <div class="form-group">
+            <label for="user_id">User</label>
+            <select name="user_id" class="form-control" id="user_id"/>
+            #for(user in users) {
+                <option value="#(user.id)">#(user.name)</option>
+            }
+            </select>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+            #if(editing){Update} else{Submit}
+        </button>
+    </form>
+}
+
+#embed("base")
+

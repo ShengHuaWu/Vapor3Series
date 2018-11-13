@@ -10,12 +10,14 @@ final class WebsiteController: RouteCollection {
         websiteRoute.get("users", use: allUsersHandler)
         websiteRoute.get("users", User.parameter, use: userHandler)
         websiteRoute.get("users", "create", use: createUserHandler)
-        websiteRoute.post(User.self, at: "users", "create", use: createUserPOSTHandler)
+        websiteRoute.post("users", "create", use: createUserPOSTHandler)
         websiteRoute.get("users", User.parameter, "edit", use: editUserHandler)
         websiteRoute.post("users", User.parameter, "edit", use: editUserPOSTHandler)
         websiteRoute.post("users", User.parameter, "delete", use: deleteUserPOSTHandler)
         websiteRoute.get("pets", use: allPetsHandler)
         websiteRoute.get("pets", Pet.parameter, use: petHandler)
+        websiteRoute.get("pets", "create", use: createPetHandler)
+        websiteRoute.post("pets", "create", use: createPetPOSTHandler)
         websiteRoute.get("categories", use: allCategoriesHandler)
         websiteRoute.get("categories", Category.parameter, use: categoryHandler)
     }
@@ -48,15 +50,17 @@ final class WebsiteController: RouteCollection {
         return try req.view().render("createUser", content)
     }
     
-    func createUserPOSTHandler(_ req: Request, user: User) throws -> Future<Response> {
-        user.password = try BCrypt.hash(user.password)
-        
-        return user.save(on: req).map(to: Response.self) { user in
-            guard let id = user.id else {
-                throw Abort(.internalServerError)
-            }
+    func createUserPOSTHandler(_ req: Request) throws -> Future<Response> {
+        return try req.content.decode(User.self).flatMap(to: Response.self) { user in
+            user.password = try BCrypt.hash(user.password)
             
-            return req.redirect(to: "/vapor/users/\(id)")
+            return user.save(on: req).map(to: Response.self) { user in
+                guard let id = user.id else {
+                    throw Abort(.internalServerError)
+                }
+                
+                return req.redirect(to: "/vapor/users/\(id)")
+            }
         }
     }
     
@@ -99,6 +103,25 @@ final class WebsiteController: RouteCollection {
             return pet.user.get(on: req).flatMap(to: View.self) { user in
                 let content = PetContent(title: pet.name, pet: pet, user: user.toPublic())
                 return try req.view().render("pet", content)
+            }
+        }
+    }
+    
+    func createPetHandler(_ req: Request) throws -> Future<View> {
+        return User.query(on: req).decode(data: User.Public.self).all().flatMap(to: View.self) { users in
+            let content = CreatePetContent(users: users)
+            return try req.view().render("createPet", content)
+        }
+    }
+    
+    func createPetPOSTHandler(_ req: Request) throws -> Future<Response> {
+        return try req.content.decode(Pet.self).flatMap(to: Response.self) { pet in
+            return pet.save(on: req).map(to: Response.self) { pet in
+                guard let id = pet.id else {
+                    throw Abort(.internalServerError)
+                }
+                
+                return req.redirect(to: "/vapor/pets/\(id)")
             }
         }
     }
@@ -155,6 +178,11 @@ struct PetContent: Encodable {
     let title: String
     let pet: Pet
     let user: User.Public
+}
+
+struct CreatePetContent: Encodable {
+    let title = "Create a Pet"
+    let users: [User.Public]
 }
 
 struct AllCategoriesContent: Encodable {
