@@ -14,7 +14,7 @@
             <label for="user_id">User</label>
             <select name="user_id" class="form-control" id="user_id"/>
             #for(user in users) {
-                <option value="#(user.id)">#(user.name)</option>
+            <option value="#(user.id)" #if(editing && pet.user_id == user.id){selected}>#(user.name)</option>
             }
             </select>
         </div>
