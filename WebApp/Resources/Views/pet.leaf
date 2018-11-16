@@ -16,6 +16,17 @@
 
     <h2>Owned by #(user.name).</h2>
 
+    #if(count(categories) > 0){
+        <h3>Categories</h3>
+        <ul>
+            #for(category in categories) {
+                <li>
+                    <a href="/vapor/categories/#(category.id)">#(category.name)</a>
+                </li>
+            }
+        </ul>
+    }
+
     <form method="post" action="/vapor/pets/#(pet.id)/delete">
         <a class="btn btn-primary" href="/vapor/pets/#(pet.id)/edit" role="button">Edit</a>
         <input class="btn btn-danger" type="submit" value="Delete"/>

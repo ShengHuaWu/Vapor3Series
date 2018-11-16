@@ -3,11 +3,11 @@ import Vapor
 final class CategoriesControll: RouteCollection {
     func boot(router: Router) throws {
         let categoriessRoute = router.grouped("api", "categories")
+        categoriessRoute.get(use: getAllHandler) // Public this endpoint for web app temporarily
         
         let tokenAuthMiddleware = User.tokenAuthMiddleware()
         let guardAuthMiddleware = User.guardAuthMiddleware()
         let tokenProtected = categoriessRoute.grouped(tokenAuthMiddleware, guardAuthMiddleware)
-        tokenProtected.get(use: getAllHandler)
         tokenProtected.get(Category.parameter, use: getOneHandler)
         tokenProtected.post(use: createHandler)
         tokenProtected.put(Category.parameter, use: updateHandler)
