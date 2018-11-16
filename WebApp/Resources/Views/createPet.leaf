@@ -20,7 +20,13 @@
         </div>
         <div class="form-group">
             <label for="category_names">Categories</label>
-            <select name="category_names[]" class="form-control" id="category_names" placeholder="Categories" multiple="multiple"></select>
+            <select name="category_names[]" class="form-control" id="category_names" placeholder="Categories" multiple="multiple">
+                #if(editing) {
+                    #for(category in categories) {
+                    <option value="#(category.name)" selected="selected">#(category.name)</option>
+                    }
+                }
+            </select>
         </div>
         
         <button type="submit" class="btn btn-primary">

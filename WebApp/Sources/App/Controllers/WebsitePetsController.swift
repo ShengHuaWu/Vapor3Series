@@ -1,5 +1,6 @@
 import Vapor
 import Leaf
+import Fluent
 
 final class WebsitePetsController: RouteCollection {
     func boot(router: Router) throws {
@@ -61,23 +62,49 @@ final class WebsitePetsController: RouteCollection {
     
     func editPetHandler(_ req: Request) throws -> Future<View> {
         return try flatMap(to: View.self, req.parameters.next(Pet.self), User.query(on: req).decode(data: User.Public.self).all()) { pet, users in
-            let content = EditPetContent(pet: pet, users: users)
-            return try req.view().render("createPet", content)
+            return try pet.categories.query(on: req).all().flatMap(to: View.self) { categories in
+                let content = EditPetContent(pet: pet, users: users, categories: categories)
+                return try req.view().render("createPet", content)
+            }
         }
     }
     
     func editPetPOSTHandler(_ req: Request) throws -> Future<Response> {
-        return try flatMap(to: Response.self, req.parameters.next(Pet.self), req.content.decode(Pet.self)) { pet, newPet in
-            pet.name = newPet.name
-            pet.age = newPet.age
-            pet.userID = newPet.userID
+        return try flatMap(to: Response.self, req.parameters.next(Pet.self), req.content.decode(CreatePetData.self)) { pet, data in
+            pet.name = data.name
+            pet.age = data.age
+            pet.userID = data.userID
             
-            return pet.save(on: req).map(to: Response.self) { savedPet in
+            return pet.save(on: req).flatMap(to: Response.self) { savedPet in
                 guard let id = savedPet.id else {
                     throw Abort(.internalServerError)
                 }
                 
-                return req.redirect(to: "/vapor/pets/\(id)")
+                return try savedPet.categories.query(on: req).all().flatMap(to: Response.self) { existingCategories in
+                    let existingNames = existingCategories.map { $0.name }
+                    let existingSet = Set<String>(existingNames)
+                    let newSet = Set<String>(data.categoryNames ?? [])
+                    
+                    let namesToAdd = newSet.subtracting(existingSet)
+                    let namesToRemove = existingSet.subtracting(newSet)
+                    
+                    var categortResults: [Future<Void>] = []
+                    for newName in namesToAdd {
+                        let save = try Category.addCategory(newName, to: savedPet, on: req)
+                        categortResults.append(save)
+                    }
+                    
+                    for nameToRemove in namesToRemove {
+                        let categoryToRemove = existingCategories.first { $0.name == nameToRemove }
+                        if let category = categoryToRemove {
+                            let remove = savedPet.categories.detach(category, on: req)
+                            categortResults.append(remove)
+                        }
+                    }
+                    
+                    let redirect = req.redirect(to: "/vapor/pets/\(id)")
+                    return categortResults.flatten(on: req).transform(to: redirect)
+                }
             }
         }
     }
@@ -108,6 +135,7 @@ struct EditPetContent: Encodable {
     let title = "Edit Pet"
     let pet: Pet
     let users: [User.Public]
+    let categories: [Category]
     let editing = true
 }
 
