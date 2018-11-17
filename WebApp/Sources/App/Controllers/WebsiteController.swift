@@ -18,37 +18,37 @@ final class WebsiteController: RouteCollection {
     }
     
     func indexHandler(_ req: Request) throws -> Future<View> {
-        let content = IndexContent(title: "Models")
-        return try req.view().render("index", content)
+        let context = IndexContext(title: "Models")
+        return try req.view().render("index", context)
     }
     
     func allCategoriesHandler(_ req: Request) throws -> Future<View> {
         return Category.query(on: req).decode(Category.self).all().flatMap(to: View.self) { categories in
-            let content = AllCategoriesContent(title: "All Categories", categories: categories)
-            return try req.view().render("allCategories", content)
+            let context = AllCategoriesContext(title: "All Categories", categories: categories)
+            return try req.view().render("allCategories", context)
         }
     }
     
     func categoryHandler(_ req: Request) throws -> Future<View> {
         return try req.parameters.next(Category.self).flatMap(to: View.self) { category in
             return try category.pets.query(on: req).all().flatMap(to: View.self) { pets in
-                let content = CategoryContent(title: category.name, category: category, pets: pets)
-                return try req.view().render("category", content)
+                let context = CategoryContext(title: category.name, category: category, pets: pets)
+                return try req.view().render("category", context)
             }
         }
     }
 }
 
-struct IndexContent: Encodable {
+struct IndexContext: Encodable {
     let title: String
 }
 
-struct AllCategoriesContent: Encodable {
+struct AllCategoriesContext: Encodable {
     let title: String
     let categories: [Category]
 }
 
-struct CategoryContent: Encodable {
+struct CategoryContext: Encodable {
     let title: String
     let category: Category
     let pets: [Pet]

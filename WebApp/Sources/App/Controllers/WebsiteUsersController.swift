@@ -18,8 +18,8 @@ final class WebsiteUsersController: RouteCollection {
     func allUsersHandler(_ req: Request) throws -> Future<View> {
         return User.query(on: req).decode(data: User.Public.self).all().flatMap(to: View.self) { users in
             let publicUsers = users.isEmpty ? nil : users
-            let content = AllUsersContent(title: "All Users", users: publicUsers)
-            return try req.view().render("allUsers", content)
+            let context = AllUsersContext(title: "All Users", users: publicUsers)
+            return try req.view().render("allUsers", context)
         }
     }
     
@@ -27,15 +27,15 @@ final class WebsiteUsersController: RouteCollection {
         return try req.parameters.next(User.self).flatMap(to: View.self) { user in
             return try user.pets.query(on: req).all().flatMap(to: View.self) { pets in
                 let publicUser = user.toPublic()
-                let content = UserContent(title: publicUser.name, user: publicUser, pets: pets)
-                return try req.view().render("user", content)
+                let context = UserContext(title: publicUser.name, user: publicUser, pets: pets)
+                return try req.view().render("user", context)
             }
         }
     }
     
     func createUserHandler(_ req: Request) throws -> Future<View> {
-        let content = CreateUserContent()
-        return try req.view().render("createUser", content)
+        let context = CreateUserContext()
+        return try req.view().render("createUser", context)
     }
     
     func createUserPOSTHandler(_ req: Request) throws -> Future<Response> {
@@ -55,8 +55,8 @@ final class WebsiteUsersController: RouteCollection {
     func editUserHandler(_ req: Request) throws -> Future<View> {
         return try req.parameters.next(User.self).flatMap(to: View.self) { user in
             let publicUser = user.toPublic()
-            let content = EditUserContent(user: publicUser)
-            return try req.view().render("createUser", content)
+            let context = EditUserContext(user: publicUser)
+            return try req.view().render("createUser", context)
         }
     }
     
@@ -80,23 +80,23 @@ final class WebsiteUsersController: RouteCollection {
     }
 }
 
-struct AllUsersContent: Encodable {
+struct AllUsersContext: Encodable {
     let title: String
     let users: [User.Public]?
 }
 
-struct UserContent: Encodable {
+struct UserContext: Encodable {
     let title: String
     let user: User.Public
     let pets: [Pet]
 }
 
-struct CreateUserContent: Encodable {
+struct CreateUserContext: Encodable {
     let title = "Create a User"
     let creating = true
 }
 
-struct EditUserContent: Encodable {
+struct EditUserContext: Encodable {
     let title = "Edit User"
     let user: User.Public
     let editing = true

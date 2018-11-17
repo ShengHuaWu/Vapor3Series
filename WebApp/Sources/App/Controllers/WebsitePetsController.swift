@@ -1,6 +1,5 @@
 import Vapor
 import Leaf
-import Fluent
 
 final class WebsitePetsController: RouteCollection {
     func boot(router: Router) throws {
@@ -17,24 +16,24 @@ final class WebsitePetsController: RouteCollection {
     
     func allPetsHandler(_ req: Request) throws -> Future<View> {
         return Pet.query(on: req).decode(Pet.self).all().flatMap(to: View.self) { pets in
-            let content = AllPetsContent(title: "All Pets", pets: pets)
-            return try req.view().render("allPets", content)
+            let context = AllPetsContext(title: "All Pets", pets: pets)
+            return try req.view().render("allPets", context)
         }
     }
     
     func petHandler(_ req: Request) throws -> Future<View> {
         return try req.parameters.next(Pet.self).flatMap(to: View.self) { pet in
             return try flatMap(to: View.self, pet.user.get(on: req), pet.categories.query(on: req).all()) { user, categories in
-                let content = PetContent(title: pet.name, pet: pet, user: user.toPublic(), categories: categories)
-                return try req.view().render("pet", content)
+                let context = PetContext(title: pet.name, pet: pet, user: user.toPublic(), categories: categories)
+                return try req.view().render("pet", context)
             }
         }
     }
     
     func createPetHandler(_ req: Request) throws -> Future<View> {
         return User.query(on: req).decode(data: User.Public.self).all().flatMap(to: View.self) { users in
-            let content = CreatePetContent(users: users)
-            return try req.view().render("createPet", content)
+            let context = CreatePetContext(users: users)
+            return try req.view().render("createPet", context)
         }
     }
     
@@ -63,8 +62,8 @@ final class WebsitePetsController: RouteCollection {
     func editPetHandler(_ req: Request) throws -> Future<View> {
         return try flatMap(to: View.self, req.parameters.next(Pet.self), User.query(on: req).decode(data: User.Public.self).all()) { pet, users in
             return try pet.categories.query(on: req).all().flatMap(to: View.self) { categories in
-                let content = EditPetContent(pet: pet, users: users, categories: categories)
-                return try req.view().render("createPet", content)
+                let context = EditPetContext(pet: pet, users: users, categories: categories)
+                return try req.view().render("createPet", context)
             }
         }
     }
@@ -114,24 +113,24 @@ final class WebsitePetsController: RouteCollection {
     }
 }
 
-struct AllPetsContent: Encodable {
+struct AllPetsContext: Encodable {
     let title: String
     let pets: [Pet]
 }
 
-struct PetContent: Encodable {
+struct PetContext: Encodable {
     let title: String
     let pet: Pet
     let user: User.Public
     let categories: [Category]
 }
 
-struct CreatePetContent: Encodable {
+struct CreatePetContext: Encodable {
     let title = "Create a Pet"
     let users: [User.Public]
 }
 
-struct EditPetContent: Encodable {
+struct EditPetContext: Encodable {
     let title = "Edit Pet"
     let pet: Pet
     let users: [User.Public]
