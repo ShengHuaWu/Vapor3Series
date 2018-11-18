@@ -3,15 +3,15 @@ import Leaf
 
 final class WebsitePetsController: RouteCollection {
     func boot(router: Router) throws {
-        let websiteRoute = router.grouped("pets")
+        let websiteRoutes = router.grouped("pets")
         
-        websiteRoute.get(use: allPetsHandler)
-        websiteRoute.get(Pet.parameter, use: petHandler)
-        websiteRoute.get("create", use: createPetHandler)
-        websiteRoute.post("create", use: createPetPOSTHandler)
-        websiteRoute.get(Pet.parameter, "edit", use: editPetHandler)
-        websiteRoute.post(Pet.parameter, "edit", use: editPetPOSTHandler)
-        websiteRoute.post(Pet.parameter, "delete", use: deletePetPOSTHandler)
+        websiteRoutes.get(use: allPetsHandler)
+        websiteRoutes.get(Pet.parameter, use: petHandler)
+        websiteRoutes.get("create", use: createPetHandler)
+        websiteRoutes.post("create", use: createPetPOSTHandler)
+        websiteRoutes.get(Pet.parameter, "edit", use: editPetHandler)
+        websiteRoutes.post(Pet.parameter, "edit", use: editPetPOSTHandler)
+        websiteRoutes.post(Pet.parameter, "delete", use: deletePetPOSTHandler)
     }
     
     func allPetsHandler(_ req: Request) throws -> Future<View> {

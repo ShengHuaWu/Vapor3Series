@@ -3,9 +3,9 @@ import Leaf
 
 final class WebsiteCategoriesController: RouteCollection {
     func boot(router: Router) throws {
-        let websiteRoute = router.grouped("categories")
-        websiteRoute.get(use: allCategoriesHandler)
-        websiteRoute.get(Category.parameter, use: categoryHandler)
+        let websiteRoutes = router.grouped("categories")
+        websiteRoutes.get(use: allCategoriesHandler)
+        websiteRoutes.get(Category.parameter, use: categoryHandler)
     }
     
     func allCategoriesHandler(_ req: Request) throws -> Future<View> {

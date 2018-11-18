@@ -4,15 +4,15 @@ import Crypto
 
 final class WebsiteUsersController: RouteCollection {
     func boot(router: Router) throws {
-        let websiteRoute = router.grouped("users")
+        let websiteRoutes = router.grouped("users")
         
-        websiteRoute.get(use: allUsersHandler)
-        websiteRoute.get(User.parameter, use: userHandler)
-        websiteRoute.get("create", use: createUserHandler)
-        websiteRoute.post("create", use: createUserPOSTHandler)
-        websiteRoute.get(User.parameter, "edit", use: editUserHandler)
-        websiteRoute.post(User.parameter, "edit", use: editUserPOSTHandler)
-        websiteRoute.post(User.parameter, "delete", use: deleteUserPOSTHandler)
+        websiteRoutes.get(use: allUsersHandler)
+        websiteRoutes.get(User.parameter, use: userHandler)
+        websiteRoutes.get("create", use: createUserHandler)
+        websiteRoutes.post("create", use: createUserPOSTHandler)
+        websiteRoutes.get(User.parameter, "edit", use: editUserHandler)
+        websiteRoutes.post(User.parameter, "edit", use: editUserPOSTHandler)
+        websiteRoutes.post(User.parameter, "delete", use: deleteUserPOSTHandler)
     }
     
     func allUsersHandler(_ req: Request) throws -> Future<View> {
