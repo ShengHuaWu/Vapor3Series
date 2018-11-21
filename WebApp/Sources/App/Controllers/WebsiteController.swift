@@ -9,6 +9,7 @@ final class WebsiteController: RouteCollection {
         
         authSessionRoutes.get("login", use: loginHandler)
         authSessionRoutes.post("login", use: loginPOSTHandler)
+        authSessionRoutes.post("logout", use: logoutHandler)
         
         let protectedRoutes = authSessionRoutes.grouped(RedirectMiddleware<User>(path: "/vapor/login"))
         protectedRoutes.get(use: indexHandler)
@@ -24,7 +25,8 @@ final class WebsiteController: RouteCollection {
     }
     
     func indexHandler(_ req: Request) throws -> Future<View> {
-        let context = IndexContext(title: "Models")
+        let userLoggedIn = try req.isAuthenticated(User.self)
+        let context = IndexContext(title: "Models", userLoggedIn: userLoggedIn)
         return try req.view().render("index", context)
     }
     
@@ -51,10 +53,16 @@ final class WebsiteController: RouteCollection {
             }
         }
     }
+    
+    func logoutHandler(_ req: Request) throws -> Response {
+        try req.unauthenticateSession(User.self)
+        return req.redirect(to: "/vapor/login")
+    }
 }
 
 struct IndexContext: Encodable {
     let title: String
+    let userLoggedIn: Bool
 }
 
 struct LoginContext: Encodable {

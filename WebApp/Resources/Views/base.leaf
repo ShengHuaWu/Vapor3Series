@@ -37,6 +37,11 @@
                         <a href="/vapor/pets/create" class="nav-link">Create a Pet</a>
                     </li>
                 </ul>
+            #if(userLoggedIn) {
+                <form class="form-inline" action="/vapor/logout" method="POST">
+                    <input class="nav-lin btn btn-link" type="submit" value="Log out">
+                </form>
+            }
             </div>
         </nav>
         <div class="container mt-3">
