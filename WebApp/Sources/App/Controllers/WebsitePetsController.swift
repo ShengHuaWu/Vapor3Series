@@ -32,14 +32,15 @@ final class WebsitePetsController: RouteCollection {
     
     func createPetHandler(_ req: Request) throws -> Future<View> {
         return User.query(on: req).decode(data: User.Public.self).all().flatMap(to: View.self) { users in
-            let context = CreatePetContext(users: users)
+            let context = CreatePetContext()
             return try req.view().render("createPet", context)
         }
     }
     
     func createPetPOSTHandler(_ req: Request) throws -> Future<Response> {
         return try req.content.decode(CreatePetData.self).flatMap(to: Response.self) { data in
-            let pet = Pet(name: data.name, age: data.age, userID: data.userID)
+            let user = try req.requireAuthenticated(User.self)
+            let pet = try Pet(name: data.name, age: data.age, userID: user.requireID())
             
             return pet.save(on: req).flatMap(to: Response.self) { pet in
                 guard let id = pet.id else {
@@ -60,9 +61,9 @@ final class WebsitePetsController: RouteCollection {
     }
     
     func editPetHandler(_ req: Request) throws -> Future<View> {
-        return try flatMap(to: View.self, req.parameters.next(Pet.self), User.query(on: req).decode(data: User.Public.self).all()) { pet, users in
+        return try req.parameters.next(Pet.self).flatMap(to: View.self) { pet in
             return try pet.categories.query(on: req).all().flatMap(to: View.self) { categories in
-                let context = EditPetContext(pet: pet, users: users, categories: categories)
+                let context = EditPetContext(pet: pet, categories: categories)
                 return try req.view().render("createPet", context)
             }
         }
@@ -72,7 +73,9 @@ final class WebsitePetsController: RouteCollection {
         return try flatMap(to: Response.self, req.parameters.next(Pet.self), req.content.decode(CreatePetData.self)) { pet, data in
             pet.name = data.name
             pet.age = data.age
-            pet.userID = data.userID
+            
+            let user = try req.requireAuthenticated(User.self)
+            pet.userID = try user.requireID()
             
             return pet.save(on: req).flatMap(to: Response.self) { savedPet in
                 guard let id = savedPet.id else {
@@ -127,26 +130,22 @@ struct PetContext: Encodable {
 
 struct CreatePetContext: Encodable {
     let title = "Create a Pet"
-    let users: [User.Public]
 }
 
 struct EditPetContext: Encodable {
     let title = "Edit Pet"
     let pet: Pet
-    let users: [User.Public]
     let categories: [Category]
     let editing = true
 }
 
 struct CreatePetData: Content {
     enum CodingKeys: String, CodingKey {
-        case userID = "user_id"
         case name
         case age
         case categoryNames = "category_names"
     }
     
-    let userID: User.ID
     let name: String
     let age: Int
     let categoryNames: [String]?
