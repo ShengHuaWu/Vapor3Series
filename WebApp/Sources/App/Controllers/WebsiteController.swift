@@ -26,7 +26,8 @@ final class WebsiteController: RouteCollection {
     
     func indexHandler(_ req: Request) throws -> Future<View> {
         let userLoggedIn = try req.isAuthenticated(User.self)
-        let context = IndexContext(title: "Models", userLoggedIn: userLoggedIn)
+        let showCookieMessage = req.http.cookies["cookies-accepted"] == nil
+        let context = IndexContext(title: "Models", userLoggedIn: userLoggedIn, showCookieMessage: showCookieMessage)
         return try req.view().render("index", context)
     }
     
@@ -63,6 +64,7 @@ final class WebsiteController: RouteCollection {
 struct IndexContext: Encodable {
     let title: String
     let userLoggedIn: Bool
+    let showCookieMessage: Bool
 }
 
 struct LoginContext: Encodable {
