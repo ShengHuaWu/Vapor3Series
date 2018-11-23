@@ -1,5 +1,6 @@
 import Vapor
 import Leaf
+import Crypto
 
 final class WebsitePetsController: RouteCollection {
     func boot(router: Router) throws {
@@ -32,13 +33,21 @@ final class WebsitePetsController: RouteCollection {
     
     func createPetHandler(_ req: Request) throws -> Future<View> {
         return User.query(on: req).decode(data: User.Public.self).all().flatMap(to: View.self) { users in
-            let context = CreatePetContext()
+            let token = try CryptoRandom().generateData(count: 16).base64EncodedString()
+            try req.session()["CSRF_TOKEN"] = token
+            let context = CreatePetContext(csrfToken: token)
             return try req.view().render("createPet", context)
         }
     }
     
     func createPetPOSTHandler(_ req: Request) throws -> Future<Response> {
         return try req.content.decode(CreatePetData.self).flatMap(to: Response.self) { data in
+            let expectedToken = try req.session()["CSRF_TOKEN"]
+            try req.session()["CSRF_TOKEN"] = nil
+            guard expectedToken == data.csrfToken else {
+                throw Abort(.badRequest)
+            }
+            
             let user = try req.requireAuthenticated(User.self)
             let pet = try Pet(name: data.name, age: data.age, userID: user.requireID())
             
@@ -130,6 +139,7 @@ struct PetContext: Encodable {
 
 struct CreatePetContext: Encodable {
     let title = "Create a Pet"
+    let csrfToken: String
 }
 
 struct EditPetContext: Encodable {
@@ -144,9 +154,11 @@ struct CreatePetData: Content {
         case name
         case age
         case categoryNames = "category_names"
+        case csrfToken = "csrf_token"
     }
     
     let name: String
     let age: Int
     let categoryNames: [String]?
+    let csrfToken: String
 }
