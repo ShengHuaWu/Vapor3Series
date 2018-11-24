@@ -42,4 +42,19 @@ extension Pet {
     var categories: Siblings<Pet, Category, PetCategoryPivot> {
         return siblings()
     }
+    
+    func removeCategory(_ name: String, from existingCategories: [Category], on req: Request) -> Future<Void>? {
+        let categoryToRemove = existingCategories.first { $0.name == name }
+        if let category = categoryToRemove {
+            return categories.detach(category, on: req)
+        } else {
+            return nil
+        }
+    }
+    
+    func removeCategories(_ names: [String], from existingCategories: [Category], on req: Request) -> [Future<Void>] {
+        guard !names.isEmpty else { return [] }
+        
+        return names.map { removeCategory($0, from: existingCategories, on: req) }.compactMap { $0 }
+    }
 }

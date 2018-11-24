@@ -56,15 +56,8 @@ final class WebsitePetsController: RouteCollection {
                     throw Abort(.internalServerError)
                 }
                 
-                var categorySaves: [Future<Void>] = []
-                for name in data.categoryNames ?? [] {
-                    let save = try Category.addCategory(name, to: pet, on: req)
-                    categorySaves.append(save)
-                }
-                
                 let redirect = req.redirect(to: "/vapor/pets/\(id)")
-                
-                return categorySaves.flatten(on: req).transform(to: redirect)
+                return try Category.addCategories(data.categoryNames ?? [], to: pet, on: req).flatten(on: req).transform(to: redirect)
             }
         }
     }
@@ -79,7 +72,7 @@ final class WebsitePetsController: RouteCollection {
     }
     
     func editPetPOSTHandler(_ req: Request) throws -> Future<Response> {
-        return try flatMap(to: Response.self, req.parameters.next(Pet.self), req.content.decode(CreatePetData.self)) { pet, data in
+        return try flatMap(to: Response.self, req.parameters.next(Pet.self), req.content.decode(EditPetData.self)) { pet, data in
             pet.name = data.name
             pet.age = data.age
             
@@ -100,18 +93,12 @@ final class WebsitePetsController: RouteCollection {
                     let namesToRemove = existingSet.subtracting(newSet)
                     
                     var categortResults: [Future<Void>] = []
-                    for newName in namesToAdd {
-                        let save = try Category.addCategory(newName, to: savedPet, on: req)
-                        categortResults.append(save)
-                    }
                     
-                    for nameToRemove in namesToRemove {
-                        let categoryToRemove = existingCategories.first { $0.name == nameToRemove }
-                        if let category = categoryToRemove {
-                            let remove = savedPet.categories.detach(category, on: req)
-                            categortResults.append(remove)
-                        }
-                    }
+                    let saves = try Category.addCategories(Array(namesToAdd), to: savedPet, on: req)
+                    categortResults.append(contentsOf: saves)
+                    
+                    let removals = savedPet.removeCategories(Array(namesToRemove), from: existingCategories, on: req)
+                    categortResults.append(contentsOf: removals)
                     
                     let redirect = req.redirect(to: "/vapor/pets/\(id)")
                     return categortResults.flatten(on: req).transform(to: redirect)
@@ -161,4 +148,16 @@ struct CreatePetData: Content {
     let age: Int
     let categoryNames: [String]?
     let csrfToken: String
+}
+
+struct EditPetData: Content {
+    enum CodingKeys: String, CodingKey {
+        case name
+        case age
+        case categoryNames = "category_names"
+    }
+    
+    let name: String
+    let age: Int
+    let categoryNames: [String]?
 }

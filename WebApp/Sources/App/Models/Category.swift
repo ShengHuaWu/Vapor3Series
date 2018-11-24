@@ -32,4 +32,10 @@ extension Category {
             }
         }
     }
+    
+    static func addCategories(_ names: [String], to pet: Pet, on req: Request) throws -> [Future<Void>] {
+        guard !names.isEmpty else { return [] }
+        
+        return try names.map { try addCategory($0, to: pet, on: req) }
+    }
 }
