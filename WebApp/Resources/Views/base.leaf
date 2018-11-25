@@ -31,12 +31,14 @@
                     <li class="nav-item #if(title == "All Categories"){active}">
                         <a href="/vapor/categories" class="nav-link">All Categories</a>
                     </li>
-                    <li class="nav-item #if(title == "Create a User"){active}">
-                        <a href="/vapor/users/create" class="nav-link">Create a User</a>
-                    </li>
                     <li class="nav-item #if(title == "Create a Pet"){active}">
                         <a href="/vapor/pets/create" class="nav-link">Create a Pet</a>
                     </li>
+                    #if(!userLoggedIn) {
+                    <li class="nav-item #if(title == "Register"){active}">
+                        <a href="/vapor/register" class="nav-link">Register</a>
+                    </li>
+                    }
                 </ul>
             #if(userLoggedIn) {
                 <form class="form-inline" action="/vapor/logout" method="POST">

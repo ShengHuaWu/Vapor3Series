@@ -1,6 +1,5 @@
 import Vapor
 import Leaf
-import Crypto
 
 final class WebsiteUsersController: RouteCollection {
     func boot(router: Router) throws {
@@ -8,8 +7,6 @@ final class WebsiteUsersController: RouteCollection {
         
         websiteRoutes.get(use: allUsersHandler)
         websiteRoutes.get(User.parameter, use: userHandler)
-        websiteRoutes.get("create", use: createUserHandler)
-        websiteRoutes.post("create", use: createUserPOSTHandler)
         websiteRoutes.get(User.parameter, "edit", use: editUserHandler)
         websiteRoutes.post(User.parameter, "edit", use: editUserPOSTHandler)
         websiteRoutes.post(User.parameter, "delete", use: deleteUserPOSTHandler)
@@ -29,25 +26,6 @@ final class WebsiteUsersController: RouteCollection {
                 let publicUser = user.toPublic()
                 let context = UserContext(title: publicUser.name, user: publicUser, pets: pets)
                 return try req.view().render("user", context)
-            }
-        }
-    }
-    
-    func createUserHandler(_ req: Request) throws -> Future<View> {
-        let context = CreateUserContext()
-        return try req.view().render("createUser", context)
-    }
-    
-    func createUserPOSTHandler(_ req: Request) throws -> Future<Response> {
-        return try req.content.decode(User.self).flatMap(to: Response.self) { user in
-            user.password = try BCrypt.hash(user.password)
-            
-            return user.save(on: req).map(to: Response.self) { user in
-                guard let id = user.id else {
-                    throw Abort(.internalServerError)
-                }
-                
-                return req.redirect(to: "/vapor/users/\(id)")
             }
         }
     }
@@ -89,11 +67,6 @@ struct UserContext: Encodable {
     let title: String
     let user: User.Public
     let pets: [Pet]
-}
-
-struct CreateUserContext: Encodable {
-    let title = "Create a User"
-    let creating = true
 }
 
 struct EditUserContext: Encodable {

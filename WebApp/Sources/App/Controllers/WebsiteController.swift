@@ -10,6 +10,8 @@ final class WebsiteController: RouteCollection {
         authSessionRoutes.get("login", use: loginHandler)
         authSessionRoutes.post("login", use: loginPOSTHandler)
         authSessionRoutes.post("logout", use: logoutHandler)
+        authSessionRoutes.get("register", use: registerHandler)
+        authSessionRoutes.post("register", use: registerPOSTHandler)
         
         let protectedRoutes = authSessionRoutes.grouped(RedirectMiddleware<User>(path: "/vapor/login"))
         protectedRoutes.get(use: indexHandler)
@@ -59,6 +61,22 @@ final class WebsiteController: RouteCollection {
         try req.unauthenticateSession(User.self)
         return req.redirect(to: "/vapor/login")
     }
+    
+    func registerHandler(_ req: Request) throws -> Future<View> {
+        let context = RegisterContext()
+        return try req.view().render("register", context)
+    }
+    
+    func registerPOSTHandler(_ req: Request) throws -> Future<Response> {
+        return try req.content.decode(RegisterData.self).flatMap(to: Response.self) { data in
+            let password = try BCrypt.hash(data.password)
+            let user = User(name: data.name, username: data.username, password: password)
+            return user.save(on: req).map(to: Response.self) { user in
+                try req.authenticateSession(user)
+                return req.redirect(to: "/vapor")
+            }
+        }
+    }
 }
 
 struct IndexContext: Encodable {
@@ -70,6 +88,7 @@ struct IndexContext: Encodable {
 struct LoginContext: Encodable {
     let title = "Log In"
     let loginError: Bool
+    let userLoggedIn = false
     
     init(loginError: Bool = false) {
         self.loginError = loginError
@@ -79,4 +98,23 @@ struct LoginContext: Encodable {
 struct LoginData: Content {
     let username: String
     let password: String
+}
+
+struct RegisterContext: Encodable {
+    let title = "Register"
+    let userLoggedIn = false
+}
+
+struct RegisterData: Content {
+    enum CodingKeys: String, CodingKey {
+        case name
+        case username
+        case password
+        case confirmPassword = "confirm_password"
+    }
+    
+    let name: String
+    let username: String
+    let password: String
+    let confirmPassword: String
 }
