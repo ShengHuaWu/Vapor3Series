@@ -1,6 +1,13 @@
 #set("content") {
     <h1>#(title)</h1>
 
+    #if(message) {
+        <div class="alert alert-danger" role="alert">
+            Please fix the following error:<br />
+            #(message)
+        </div>
+    }
+
     <form method="post">
         <div class="form-group">
             <label for="name">Name</label>

@@ -63,12 +63,31 @@ final class WebsiteController: RouteCollection {
     }
     
     func registerHandler(_ req: Request) throws -> Future<View> {
-        let context = RegisterContext()
+        let context: RegisterContext
+        if let message = req.query[String.self, at: "message"] {
+            context = RegisterContext(message: message)
+        } else {
+            context = RegisterContext()
+        }
+        
         return try req.view().render("register", context)
     }
     
     func registerPOSTHandler(_ req: Request) throws -> Future<Response> {
         return try req.content.decode(RegisterData.self).flatMap(to: Response.self) { data in
+            do {
+                try data.validate()
+            } catch (let error) {
+                let redirect: String
+                if let error = error as? ValidationError,
+                    let message = error.reason.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) {
+                    redirect = "/vapor/register?message=\(message)"
+                } else {
+                    redirect = "/vapor/register?message=Unknown+error"
+                }
+                return req.future(req.redirect(to: redirect))
+            }
+            
             let password = try BCrypt.hash(data.password)
             let user = User(name: data.name, username: data.username, password: password)
             return user.save(on: req).map(to: Response.self) { user in
@@ -103,6 +122,11 @@ struct LoginData: Content {
 struct RegisterContext: Encodable {
     let title = "Register"
     let userLoggedIn = false
+    let message: String?
+    
+    init(message: String? = nil) {
+        self.message = message
+    }
 }
 
 struct RegisterData: Content {
@@ -117,4 +141,20 @@ struct RegisterData: Content {
     let username: String
     let password: String
     let confirmPassword: String
+}
+
+extension RegisterData: Validatable, Reflectable {
+    static func validations() throws -> Validations<RegisterData> {
+        var validations = Validations(RegisterData.self)
+        try validations.add(\.name, .ascii)
+        try validations.add(\.username, .alphanumeric && .count(3...))
+        try validations.add(\.password, .count(6...))
+        validations.add("password match") { data in
+            guard data.password == data.confirmPassword else {
+                throw BasicValidationError("Passwords don't match")
+            }
+        }
+        
+        return validations
+    }
 }
